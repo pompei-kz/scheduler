@@ -16,8 +16,33 @@ class ReflectUtil {
    * @param <Ann>           type of annotation
    * @return found annotation instance or null if not found
    */
-  static <Ann extends Annotation> @Nullable Ann findAnnotation(@NonNull Method method, @NonNull Class<Ann> annotationClass) {
-    throw new RuntimeException("e6PW4DR8Zj :: Not implemented yet");
+  static <Ann extends Annotation> @Nullable Ann findAnnotation(@NonNull Method method,
+                                                               @SuppressWarnings("SameParameterValue") @NonNull Class<Ann> annotationClass) {
+    {
+      @Nullable Ann annotation = method.getAnnotation(annotationClass);
+      if (annotation != null) {
+        return annotation;
+      }
+    }
+
+    Class<?> clazz = method.getDeclaringClass().getSuperclass();
+
+    while (clazz != null) {
+      try {
+        @Nullable Method parentMethod = clazz.getDeclaredMethod(method.getName(), method.getParameterTypes());
+        @Nullable Ann    annotation   = parentMethod.getAnnotation(annotationClass);
+
+        if (annotation != null) {
+          return annotation;
+        }
+
+      } catch (NoSuchMethodException ignored) {
+        // Move to the next parent class.
+      }
+      clazz = clazz.getSuperclass();
+    }
+
+    return null;
   }
 
 }

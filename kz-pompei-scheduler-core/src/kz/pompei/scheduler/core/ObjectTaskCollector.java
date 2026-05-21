@@ -6,6 +6,9 @@ import java.util.List;
 import kz.pompei.hotconfig.core.ConfigTunnel;
 import kz.pompei.scheduler.core.annotation.Schedule;
 import lombok.NonNull;
+import org.jetbrains.annotations.Nullable;
+
+import static kz.pompei.scheduler.core.ReflectUtil.findAnnotation;
 
 public class ObjectTaskCollector {
 
@@ -16,13 +19,15 @@ public class ObjectTaskCollector {
   }
 
   public @NonNull List<ScheduledTask> collect(@NonNull Object object) {
-    List<ScheduledTask> ret = new ArrayList<>();
-
-    Method[] methods = object.getClass().getMethods();
+    List<ScheduledTask> ret     = new ArrayList<>();
+    Method[]            methods = object.getClass().getMethods();
 
     for (Method method : methods) {
 
-      method.getAnnotation(Schedule.class);
+      @Nullable Schedule schedule = findAnnotation(method, Schedule.class);
+
+      if (schedule == null) continue;
+
 
     }
 
