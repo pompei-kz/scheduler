@@ -7,13 +7,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import kz.pompei.hotconfig.core.ConfigTunnel;
 import kz.pompei.hotconfig.core.ann.ConfDoc;
 import kz.pompei.hotconfig.core.model.Conf;
+import kz.pompei.hotconfig.core.model.ConfParam;
+import kz.pompei.scheduler.core.annotation.FromConf;
 import kz.pompei.scheduler.core.annotation.Schedule;
-import kz.pompei.scheduler.core.scheduler_src.Compiler;
-import kz.pompei.scheduler.core.scheduler_src.ScheduleSrc;
 import lombok.NonNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,20 +30,21 @@ public class ObjectTaskCollector {
     List<ScheduledTask> ret                       = new ArrayList<>();
     Method[]            methods                   = object.getClass().getMethods();
     Conf                confDefault               = new Conf();
-    Map<String, String> taskName_to_schedulerText = new HashMap<>();
 
     {
-      @Nullable ConfDoc classConfDoc = findAnnotation(object.getClass(), ConfDoc.class);
+      @Nullable ReflectUtil.Ann_Class<ConfDoc> classConfDoc = findAnnotation(object.getClass(), ConfDoc.class);
       if (classConfDoc != null) {
-        Collections.addAll(confDefault.confComments, classConfDoc.value().split("\n"));
+        Collections.addAll(confDefault.confComments, classConfDoc.ann.value().split("\n"));
       }
     }
 
-    Map<String, Task> tasks = new HashMap<>();
+
+
+    Map<String, Task> taskName_to_task = new HashMap<>();
 
     for (Method method : methods) {
 
-      @Nullable Schedule schedule = findAnnotation(method, Schedule.class);
+      @Nullable ReflectUtil.Ann_Method<Schedule> schedule = findAnnotation(method, Schedule.class);
 
       if (schedule == null) continue;
 
@@ -52,12 +52,24 @@ public class ObjectTaskCollector {
         throw new RuntimeException("82J5nXW9Mg :: scheduler method must be without parameters: " + method);
       }
 
-      @NonNull Task   task = createTask(object, method);
-      @NonNull String name = method.getName();
+      @NonNull Task   task     = createTask(object, method);
+      @NonNull String taskName = method.getName();
 
-      tasks.put(name, task);
+      taskName_to_task.put(taskName, task);
 
-      taskName_to_schedulerText.put(name, schedule.value());
+      @Nullable ReflectUtil.Ann_Method<FromConf> fromConf = findAnnotation(method, FromConf.class);
+
+      if (fromConf != null) {
+
+        ConfParam confParam = new ConfParam(taskName, schedule.ann.value());
+        confDefault.params.add(confParam);
+
+        @Nullable ReflectUtil.Ann_Method<ConfDoc> paramDoc = findAnnotation(method, ConfDoc.class);
+        if (paramDoc != null) {
+          confParam.comment(paramDoc.ann.value());
+        }
+
+      }
     }
 
     return ret;
