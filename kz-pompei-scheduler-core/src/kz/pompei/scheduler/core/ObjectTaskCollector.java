@@ -7,47 +7,80 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import kz.pompei.hotconfig.core.ConfigTunnel;
 import kz.pompei.hotconfig.core.ann.ConfDoc;
+import kz.pompei.hotconfig.core.ann.ConfFolder;
 import kz.pompei.hotconfig.core.model.Conf;
 import kz.pompei.hotconfig.core.model.ConfParam;
 import kz.pompei.scheduler.core.annotation.FromConf;
 import kz.pompei.scheduler.core.annotation.Schedule;
+import kz.pompei.scheduler.core.scheduler_src.Compiler;
+import kz.pompei.scheduler.core.scheduler_src.ScheduleSrc;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 import static kz.pompei.scheduler.core.ReflectUtil.findAnnotation;
 
 public class ObjectTaskCollector {
 
   private final @NonNull ConfigTunnel tunnel;
+  @NonNull private final Def          def;
 
-  public ObjectTaskCollector(@NonNull ConfigTunnel tunnel) {
+  private final List<Runnable> refreshHandlers = new ArrayList<>();
+
+  ObjectTaskCollector(@NonNull ConfigTunnel tunnel, @NonNull Def def) {
     this.tunnel = tunnel;
+    this.def    = def;
+  }
+
+  public static @NonNull ObjectTaskCollectorBuilder builder() {
+    return new ObjectTaskCollectorBuilder();
+  }
+
+  @RequiredArgsConstructor
+  static class Def {
+    final @NonNull String extension;
+  }
+
+  public void refresh() {
+    refreshHandlers.forEach(Runnable::run);
   }
 
   public @NonNull List<ScheduledTask> collect(@NonNull Object object) {
-    List<ScheduledTask> ret                       = new ArrayList<>();
-    Method[]            methods                   = object.getClass().getMethods();
-    Conf                confDefault               = new Conf();
+    List<ScheduledTask> ret         = new ArrayList<>();
+    Method[]            methods     = object.getClass().getMethods();
+    Conf                confDefault = new Conf();
 
-    {
-      findAnnotation(object.getClass(), ConfDoc.class)
-        .ifPresent(classConfDoc -> Collections.addAll(confDefault.confComments, classConfDoc.ann.value().split("\n")));
-    }
-
-
-
-    Map<String, Task> taskName_to_task = new HashMap<>();
+    Map<String, Task>                      taskName_to_task = new HashMap<>();
+    ConcurrentHashMap<String, ScheduleSrc> taskName_to_src  = new ConcurrentHashMap<>();
 
     for (Method method : methods) {
 
-      Optional<ReflectUtil.Ann_Method<Schedule>> schedule = findAnnotation(method, Schedule.class);
+      ReflectUtil.Ann_Method<Schedule> schedule = findAnnotation(method, Schedule.class).orElse(null);
 
-      if (schedule.isEmpty()) continue;
+      if (schedule == null) continue;
 
       if (method.getParameterCount() > 0) {
         throw new RuntimeException("82J5nXW9Mg :: scheduler method must be without parameters: " + method);
+      }
+
+      if (findAnnotation(method, FromConf.class).isEmpty()) {
+        ret.add(new ScheduledTask() {
+          @NonNull final ScheduleSrc scheduleSrc = Compiler.compile(schedule.ann.value());
+          @NonNull final Task        task        = createTask(object, method);
+
+          @Override public @NonNull ScheduleSrc src() {
+            return scheduleSrc;
+          }
+
+          @Override public @NonNull Task task() {
+            return task;
+          }
+        });
+        continue;
       }
 
       @NonNull Task   task     = createTask(object, method);
@@ -55,18 +88,97 @@ public class ObjectTaskCollector {
 
       taskName_to_task.put(taskName, task);
 
-      Optional<ReflectUtil.Ann_Method<FromConf>> fromConf = findAnnotation(method, FromConf.class);
+      ConfParam confParam = new ConfParam(taskName, schedule.ann.value());
+      confDefault.params.add(confParam);
 
-      if (fromConf.isPresent()) {
+      findAnnotation(method, ConfDoc.class).ifPresent(paramDoc -> confParam.comment(paramDoc.ann.value()));
 
-        ConfParam confParam = new ConfParam(taskName, schedule.get().ann.value());
-        confDefault.params.add(confParam);
+      ret.add(new ScheduledTask() {
+        @Override public @NonNull ScheduleSrc src() {
+          ScheduleSrc scheduleSrc = taskName_to_src.get(taskName);
+          return scheduleSrc != null ? scheduleSrc : ScheduleSrc.NEVER_RUN;
+        }
 
-        findAnnotation(method, ConfDoc.class)
-          .ifPresent(paramDoc -> confParam.comment(paramDoc.ann.value()));
-
-      }
+        @Override public @NonNull Task task() {
+          return task;
+        }
+      });
     }
+
+    if (confDefault.params.isEmpty()) {
+      return ret;
+    }
+
+    findAnnotation(object.getClass(), ConfDoc.class).ifPresent(
+      classConfDoc -> Collections.addAll(confDefault.confComments, classConfDoc.ann.value().split("\n")));
+
+    @NonNull String folder    = findAnnotation(object.getClass(), ConfFolder.class).map(s -> s + "/").orElse("");
+    @NonNull String localPath = folder + object.getClass().getSimpleName() + def.extension;
+
+    AtomicLong lastModificationMarker = new AtomicLong(0L);
+
+    Runnable update = () -> {
+      Conf conf               = tunnel.read(localPath);
+      Long modificationMarker = tunnel.modificationMarker(localPath);
+
+      if (conf == null || modificationMarker == null) {
+        tunnel.write(localPath, confDefault);
+        modificationMarker = tunnel.modificationMarker(localPath);
+        conf               = confDefault;
+      } else {
+
+        Conf    confNew = conf.copy();
+        boolean changed = false;
+
+        for (ConfParam paramDefault : confDefault.params) {
+
+          boolean notFound = true;
+
+          for (ConfParam param : confNew.params) {
+            if (Objects.equals(paramDefault.name, param.name)) {
+              notFound = false;
+              break;
+            }
+          }
+
+          if (notFound) {
+            changed = true;
+            confNew.params.add(paramDefault);
+          }
+        }
+
+        if (changed) {
+          tunnel.write(localPath, confNew);
+          modificationMarker = tunnel.modificationMarker(localPath);
+          conf               = confNew;
+        }
+      }
+      if (modificationMarker != null) {
+        lastModificationMarker.set(modificationMarker);
+      }
+
+      for (ConfParam param : conf.params) {
+        Task task = taskName_to_task.get(param.name);
+        if (task == null) continue;
+
+        //
+        //
+        ScheduleSrc scheduleSrc = Compiler.compile(param.valueStr);
+        //
+        //
+
+        taskName_to_src.put(param.name, scheduleSrc);
+      }
+    };
+
+    refreshHandlers.add(() -> {
+
+      Long modificationMarker = tunnel.modificationMarker(localPath);
+      if (modificationMarker == null) return;
+      if (lastModificationMarker.longValue() == modificationMarker) return;
+
+      update.run();
+    });
 
     return ret;
   }

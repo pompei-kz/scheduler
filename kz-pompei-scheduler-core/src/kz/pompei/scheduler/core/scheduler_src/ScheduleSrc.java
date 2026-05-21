@@ -1,5 +1,7 @@
 package kz.pompei.scheduler.core.scheduler_src;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Source of information about scheduling for a task.
  */
@@ -24,7 +26,7 @@ public interface ScheduleSrc {
    *
    * @return executor name
    */
-  String executorName();
+  @Nullable String executorName();
 
   /**
    * Does this task can be run in parallel with self, while the previous run of this task is still running?
@@ -33,4 +35,17 @@ public interface ScheduleSrc {
    */
   boolean isParallel();
 
+  ScheduleSrc NEVER_RUN = new ScheduleSrc() {
+    @Override public boolean isScheduled(long timestampStartedAt, long timestampFrom, long timestampTo) {
+      return false;
+    }
+
+    @Override public @Nullable String executorName() {
+      return null;
+    }
+
+    @Override public boolean isParallel() {
+      return false;
+    }
+  };
 }
