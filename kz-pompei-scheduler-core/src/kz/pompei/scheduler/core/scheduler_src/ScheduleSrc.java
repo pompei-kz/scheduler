@@ -17,7 +17,7 @@ public interface ScheduleSrc {
    * @param timestampTo        current checking time
    * @return need the task to be run
    */
-  boolean isScheduled(long timestampStartedAt, long timestampFrom, long timestampTo);
+  boolean needRun(long timestampStartedAt, long timestampFrom, long timestampTo);
 
   /**
    * Executor name to be used to run a task.
@@ -36,7 +36,7 @@ public interface ScheduleSrc {
   boolean isParallel();
 
   ScheduleSrc NEVER_RUN = new ScheduleSrc() {
-    @Override public boolean isScheduled(long timestampStartedAt, long timestampFrom, long timestampTo) {
+    @Override public boolean needRun(long timestampStartedAt, long timestampFrom, long timestampTo) {
       return false;
     }
 

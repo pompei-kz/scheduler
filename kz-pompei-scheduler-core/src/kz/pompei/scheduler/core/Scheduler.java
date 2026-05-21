@@ -91,7 +91,7 @@ public class Scheduler {
           ScheduledTask scheduledTask = e.getValue();
           ScheduleSrc   src           = scheduledTask.src();
 
-          if (src.isScheduled(timestampStartedAt, timestampCurrent, newTimestamp)) {
+          if (src.needRun(timestampStartedAt, timestampCurrent, newTimestamp)) {
 
             if (src.isParallel() || runCount(taskId) == 0) {
               taskIdsToRun.add(taskId);
