@@ -1,7 +1,7 @@
 package kz.pompei.scheduler.core;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.LongSupplier;
+import java.util.concurrent.atomic.AtomicLong;
 import kz.pompei.hotconfig.core.ConfigTunnel;
 import kz.pompei.hotconfig.core.model.Conf;
 import lombok.NonNull;
@@ -10,11 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class ConfigTunnelFake implements ConfigTunnel {
 
-  @NonNull private final LongSupplier timeGetter;
-
-  public ConfigTunnelFake(@NonNull LongSupplier timeGetter) {
-    this.timeGetter = timeGetter;
-  }
+  private final AtomicLong timeGoing = new AtomicLong(100);
 
   @RequiredArgsConstructor
   private static class Dot {
@@ -30,7 +26,7 @@ public class ConfigTunnelFake implements ConfigTunnel {
   }
 
   @Override public void write(@NonNull String localPath, @NonNull Conf conf) {
-    long modificationMarker = timeGetter.getAsLong();
+    long modificationMarker = timeGoing.getAndIncrement();
     localPath_to_dot.put(localPath, new Dot(conf.copy(), modificationMarker));
   }
 
