@@ -1,0 +1,3 @@
+dependencies {
+  implementation "kz.pompei.hotconfig:kz-pompei-hotconfig-core:$kz_pompei_hotconfig_version"
+}
