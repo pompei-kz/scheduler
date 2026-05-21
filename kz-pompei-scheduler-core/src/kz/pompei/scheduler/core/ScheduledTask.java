@@ -1,5 +1,6 @@
 package kz.pompei.scheduler.core;
 
+import kz.pompei.scheduler.core.scheduler_src.ScheduleSrc;
 import lombok.NonNull;
 
 /**

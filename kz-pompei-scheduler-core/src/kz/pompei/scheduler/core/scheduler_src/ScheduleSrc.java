@@ -1,4 +1,4 @@
-package kz.pompei.scheduler.core;
+package kz.pompei.scheduler.core.scheduler_src;
 
 /**
  * Source of information about scheduling for a task.

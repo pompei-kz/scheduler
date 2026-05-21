@@ -3,9 +3,22 @@ package kz.pompei.scheduler.core;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.Nullable;
 
 class ReflectUtil {
+
+  @RequiredArgsConstructor
+  public static class Ann_Class<Ann extends Annotation> {
+    public final @NonNull Ann      ann;
+    public final @NonNull Class<?> clazz;
+  }
+
+  @RequiredArgsConstructor
+  public static class Ann_Method<Ann extends Annotation> {
+    public final @NonNull Ann    ann;
+    public final @NonNull Method method;
+  }
 
   /**
    * Gets the specified annotation from the specified class. If it doesn't exist, it gets the annotation from the parent class.
