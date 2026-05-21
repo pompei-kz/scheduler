@@ -1,5 +1,7 @@
 package kz.pompei.scheduler.core.annotation;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,7 @@ public class RunChecker_HMS implements RunChecker {
   private final @NonNull TimeZone timeZone;
 
   /**
-   * First, the method gets (year,month,day) from `timestampStartedAt` and `timeZone` (using GregorianCalendar).
+   * First, the method gets (year,month,day) from `timestampMsFrom` and `timeZone` (using GregorianCalendar).
    * <p>
    * Then (year, month, day), `hour`, `minute`, `second` converts to milliseconds (using GregorianCalendar) to variable `timestampMs`.
    * <p>
@@ -28,6 +30,19 @@ public class RunChecker_HMS implements RunChecker {
    * @return result of check
    */
   @Override public boolean needRun(long timestampStartedAt, long timestampMsFrom, long timestampMsTo) {
-    throw new RuntimeException("dOK428XrLM :: Not impl yet RunChecker_HMS.needRun()");
+    if (timestampMsTo <= timestampMsFrom) {
+      return false;
+    }
+
+    GregorianCalendar calendar = new GregorianCalendar(timeZone);
+    calendar.setTimeInMillis(timestampMsFrom);
+    calendar.set(Calendar.HOUR_OF_DAY, hour);
+    calendar.set(Calendar.MINUTE, minute);
+    calendar.set(Calendar.SECOND, second);
+    calendar.set(Calendar.MILLISECOND, 0);
+
+    long timestampMs = calendar.getTimeInMillis();
+
+    return timestampMsFrom <= timestampMs && timestampMs < timestampMsTo;
   }
 }
