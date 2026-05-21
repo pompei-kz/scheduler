@@ -7,6 +7,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -16,43 +17,47 @@ public class ReflectUtilTest {
 
   @Test
   public void findAnnotation_shouldReturnAnnotationFromClass() {
-    ReflectUtil.Ann_Class<ClassSchedule> schedule = ReflectUtil.findAnnotation(DirectAnnotatedClass.class, ClassSchedule.class);
+    Optional<ReflectUtil.Ann_Class<ClassSchedule>> scheduleOpt = ReflectUtil.findAnnotation(DirectAnnotatedClass.class, ClassSchedule.class);
 
-    assertThat(schedule).isNotNull();
+    assertThat(scheduleOpt).isPresent();
+    ReflectUtil.Ann_Class<ClassSchedule> schedule = scheduleOpt.orElseThrow();
     assertThat(schedule.ann.value()).isEqualTo("directClass");
     assertThat(schedule.clazz).isEqualTo(DirectAnnotatedClass.class);
   }
 
   @Test
   public void findAnnotation_shouldReturnAnnotationFromParentClass() {
-    ReflectUtil.Ann_Class<ClassSchedule> schedule = ReflectUtil.findAnnotation(ChildClass.class, ClassSchedule.class);
+    Optional<ReflectUtil.Ann_Class<ClassSchedule>> scheduleOpt = ReflectUtil.findAnnotation(ChildClass.class, ClassSchedule.class);
 
-    assertThat(schedule).isNotNull();
+    assertThat(scheduleOpt).isPresent();
+    ReflectUtil.Ann_Class<ClassSchedule> schedule = scheduleOpt.orElseThrow();
     assertThat(schedule.ann.value()).isEqualTo("parentClass");
     assertThat(schedule.clazz).isEqualTo(ParentClass.class);
   }
 
   @Test
-  public void findAnnotation_shouldReturnNullWhenClassAnnotationNotFound() {
-    ReflectUtil.Ann_Class<ClassSchedule> schedule = ReflectUtil.findAnnotation(NotAnnotatedClass.class, ClassSchedule.class);
+  public void findAnnotation_shouldReturnEmptyWhenClassAnnotationNotFound() {
+    Optional<ReflectUtil.Ann_Class<ClassSchedule>> schedule = ReflectUtil.findAnnotation(NotAnnotatedClass.class, ClassSchedule.class);
 
-    assertThat(schedule).isNull();
+    assertThat(schedule).isEmpty();
   }
 
   @Test
   public void findAnnotation_shouldReturnAnotherAnnotationFromClass() {
-    ReflectUtil.Ann_Class<ClassLabel> label = ReflectUtil.findAnnotation(DirectLabeledClass.class, ClassLabel.class);
+    Optional<ReflectUtil.Ann_Class<ClassLabel>> labelOpt = ReflectUtil.findAnnotation(DirectLabeledClass.class, ClassLabel.class);
 
-    assertThat(label).isNotNull();
+    assertThat(labelOpt).isPresent();
+    ReflectUtil.Ann_Class<ClassLabel> label = labelOpt.orElseThrow();
     assertThat(label.ann.name()).isEqualTo("directLabel");
     assertThat(label.clazz).isEqualTo(DirectLabeledClass.class);
   }
 
   @Test
   public void findAnnotation_shouldReturnAnotherAnnotationFromParentClass() {
-    ReflectUtil.Ann_Class<ClassLabel> label = ReflectUtil.findAnnotation(ChildLabeledClass.class, ClassLabel.class);
+    Optional<ReflectUtil.Ann_Class<ClassLabel>> labelOpt = ReflectUtil.findAnnotation(ChildLabeledClass.class, ClassLabel.class);
 
-    assertThat(label).isNotNull();
+    assertThat(labelOpt).isPresent();
+    ReflectUtil.Ann_Class<ClassLabel> label = labelOpt.orElseThrow();
     assertThat(label.ann.name()).isEqualTo("parentLabel");
     assertThat(label.clazz).isEqualTo(ParentLabeledClass.class);
   }
@@ -63,11 +68,12 @@ public class ReflectUtilTest {
 
     //
     //
-    ReflectUtil.Ann_Method<Schedule> schedule = ReflectUtil.findAnnotation(method, Schedule.class);
+    Optional<ReflectUtil.Ann_Method<Schedule>> scheduleOpt = ReflectUtil.findAnnotation(method, Schedule.class);
     //
     //
 
-    assertThat(schedule).isNotNull();
+    assertThat(scheduleOpt).isPresent();
+    ReflectUtil.Ann_Method<Schedule> schedule = scheduleOpt.orElseThrow();
     assertThat(schedule.ann.value()).isEqualTo("direct");
     assertThat(schedule.method).isEqualTo(method);
   }
@@ -78,35 +84,37 @@ public class ReflectUtilTest {
 
     //
     //
-    ReflectUtil.Ann_Method<Schedule> schedule = ReflectUtil.findAnnotation(method, Schedule.class);
+    Optional<ReflectUtil.Ann_Method<Schedule>> scheduleOpt = ReflectUtil.findAnnotation(method, Schedule.class);
     //
     //
 
-    assertThat(schedule).isNotNull();
+    assertThat(scheduleOpt).isPresent();
+    ReflectUtil.Ann_Method<Schedule> schedule = scheduleOpt.orElseThrow();
     assertThat(schedule.ann.value()).isEqualTo("parent");
     assertThat(schedule.method).isEqualTo(ParentTask.class.getDeclaredMethod("runTask", String.class));
   }
 
   @Test
-  public void findAnnotation_shouldReturnNullWhenAnnotationNotFound() throws NoSuchMethodException {
+  public void findAnnotation_shouldReturnEmptyWhenAnnotationNotFound() throws NoSuchMethodException {
     Method method = NotAnnotatedTask.class.getDeclaredMethod("runTask");
 
     //
     //
-    ReflectUtil.Ann_Method<Schedule> schedule = ReflectUtil.findAnnotation(method, Schedule.class);
+    Optional<ReflectUtil.Ann_Method<Schedule>> schedule = ReflectUtil.findAnnotation(method, Schedule.class);
     //
     //
 
-    assertThat(schedule).isNull();
+    assertThat(schedule).isEmpty();
   }
 
   @Test
   public void findAnnotation_shouldReturnAnotherAnnotationFromMethod() throws NoSuchMethodException {
     Method method = DirectMarkedTask.class.getDeclaredMethod("runTask");
 
-    ReflectUtil.Ann_Method<MethodMarker> marker = ReflectUtil.findAnnotation(method, MethodMarker.class);
+    Optional<ReflectUtil.Ann_Method<MethodMarker>> markerOpt = ReflectUtil.findAnnotation(method, MethodMarker.class);
 
-    assertThat(marker).isNotNull();
+    assertThat(markerOpt).isPresent();
+    ReflectUtil.Ann_Method<MethodMarker> marker = markerOpt.orElseThrow();
     assertThat(marker.ann.code()).isEqualTo(100);
     assertThat(marker.method).isEqualTo(method);
   }
@@ -115,9 +123,10 @@ public class ReflectUtilTest {
   public void findAnnotation_shouldReturnAnotherAnnotationFromParentOverriddenMethod() throws NoSuchMethodException {
     Method method = ChildMarkedTask.class.getDeclaredMethod("runTask");
 
-    ReflectUtil.Ann_Method<MethodMarker> marker = ReflectUtil.findAnnotation(method, MethodMarker.class);
+    Optional<ReflectUtil.Ann_Method<MethodMarker>> markerOpt = ReflectUtil.findAnnotation(method, MethodMarker.class);
 
-    assertThat(marker).isNotNull();
+    assertThat(markerOpt).isPresent();
+    ReflectUtil.Ann_Method<MethodMarker> marker = markerOpt.orElseThrow();
     assertThat(marker.ann.code()).isEqualTo(200);
     assertThat(marker.method).isEqualTo(ParentMarkedTask.class.getDeclaredMethod("runTask"));
   }

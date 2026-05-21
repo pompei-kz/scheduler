@@ -2,6 +2,7 @@ package kz.pompei.scheduler.core;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.Nullable;
@@ -27,22 +28,22 @@ class ReflectUtil {
    * @param clazz           class with annotation
    * @param annotationClass finding annotation
    * @param <Ann>           type of annotation
-   * @return found annotation and class where it was found, or null if not found
+   * @return found annotation and class where it was found, or empty if not found
    */
-  static <Ann extends Annotation> @Nullable Ann_Class<Ann> findAnnotation(@NonNull Class<?> clazz,
-                                                                          @NonNull Class<Ann> annotationClass) {
+  static <Ann extends Annotation> @NonNull Optional<Ann_Class<Ann>> findAnnotation(@NonNull Class<?> clazz,
+                                                                                   @NonNull Class<Ann> annotationClass) {
     Class<?> currentClass = clazz;
 
     while (currentClass != null) {
       @Nullable Ann annotation = currentClass.getDeclaredAnnotation(annotationClass);
       if (annotation != null) {
-        return new Ann_Class<>(annotation, currentClass);
+        return Optional.of(new Ann_Class<>(annotation, currentClass));
       }
 
       currentClass = currentClass.getSuperclass();
     }
 
-    return null;
+    return Optional.empty();
   }
 
   /**
@@ -52,14 +53,14 @@ class ReflectUtil {
    * @param method          method with annotation
    * @param annotationClass finding annotation
    * @param <Ann>           type of annotation
-   * @return found annotation and method where it was found, or null if not found
+   * @return found annotation and method where it was found, or empty if not found
    */
-  static <Ann extends Annotation> @Nullable Ann_Method<Ann> findAnnotation(@NonNull Method method,
-                                                                           @NonNull Class<Ann> annotationClass) {
+  static <Ann extends Annotation> @NonNull Optional<Ann_Method<Ann>> findAnnotation(@NonNull Method method,
+                                                                                    @NonNull Class<Ann> annotationClass) {
     {
       @Nullable Ann annotation = method.getAnnotation(annotationClass);
       if (annotation != null) {
-        return new Ann_Method<>(annotation, method);
+        return Optional.of(new Ann_Method<>(annotation, method));
       }
     }
 
@@ -71,7 +72,7 @@ class ReflectUtil {
         @Nullable Ann    annotation   = parentMethod.getAnnotation(annotationClass);
 
         if (annotation != null) {
-          return new Ann_Method<>(annotation, parentMethod);
+          return Optional.of(new Ann_Method<>(annotation, parentMethod));
         }
 
       } catch (NoSuchMethodException ignored) {
@@ -80,7 +81,7 @@ class ReflectUtil {
       clazz = clazz.getSuperclass();
     }
 
-    return null;
+    return Optional.empty();
   }
 
 }
