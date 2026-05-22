@@ -1,16 +1,16 @@
-package kz.pompei.scheduler.core.annotation;
+package kz.pompei.scheduler.core.run_checker;
 
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import org.testng.annotations.Test;
 
-import static kz.pompei.scheduler.core.annotation.DayOfWeek.FRIDAY;
-import static kz.pompei.scheduler.core.annotation.DayOfWeek.MONDAY;
-import static kz.pompei.scheduler.core.annotation.DayOfWeek.SATURDAY;
-import static kz.pompei.scheduler.core.annotation.DayOfWeek.SUNDAY;
-import static kz.pompei.scheduler.core.annotation.DayOfWeek.THURSDAY;
-import static kz.pompei.scheduler.core.annotation.DayOfWeek.TUESDAY;
-import static kz.pompei.scheduler.core.annotation.DayOfWeek.WEDNESDAY;
+import static kz.pompei.scheduler.core.run_checker.DayOfWeek.FRIDAY;
+import static kz.pompei.scheduler.core.run_checker.DayOfWeek.MONDAY;
+import static kz.pompei.scheduler.core.run_checker.DayOfWeek.SATURDAY;
+import static kz.pompei.scheduler.core.run_checker.DayOfWeek.SUNDAY;
+import static kz.pompei.scheduler.core.run_checker.DayOfWeek.THURSDAY;
+import static kz.pompei.scheduler.core.run_checker.DayOfWeek.TUESDAY;
+import static kz.pompei.scheduler.core.run_checker.DayOfWeek.WEDNESDAY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RunChecker_DAY_OF_WEEK_Test {

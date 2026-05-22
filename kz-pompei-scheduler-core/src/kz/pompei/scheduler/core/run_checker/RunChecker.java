@@ -1,4 +1,4 @@
-package kz.pompei.scheduler.core.annotation;
+package kz.pompei.scheduler.core.run_checker;
 
 /**
  * Interface for checking if a task should be run based on time range.

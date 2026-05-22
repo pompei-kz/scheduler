@@ -1,4 +1,4 @@
-package kz.pompei.scheduler.core.annotation;
+package kz.pompei.scheduler.core.run_checker;
 
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
