@@ -2,6 +2,9 @@ package kz.pompei.scheduler.core.annotation;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * RunChecker_PERIODIC checks if a periodic task should be run based on the given timestamp range.
+ */
 @RequiredArgsConstructor
 public class RunChecker_PERIODIC implements RunChecker {
 
