@@ -104,6 +104,22 @@ public class RunChecker_FromHMS_ToHMS_Every_Test extends RunCheckerTestParent {
   }
 
   @Test
+  public void needRun_shouldReturnTrueForPointOnMiddleDay() {
+    RunChecker_FromHMS_ToHMS_Every checker   = new RunChecker_FromHMS_ToHMS_Every(UTC, 10, 0, 0, 12, 0, 0, 30 * 60 * 1000);
+    long                           startedAt = timestamp(UTC, 2026, 5, 1, 0, 0, 0, 0);
+    long                           from      = timestamp(UTC, 2026, 5, 21, 12, 0, 1, 0);
+    long                           to        = timestamp(UTC, 2026, 5, 23, 9, 59, 59, 0);
+
+    //
+    //
+    boolean needRun = checker.needRun(startedAt, from, to);
+    //
+    //
+
+    assertThat(needRun).isTrue();
+  }
+
+  @Test
   public void needRun_shouldUseConfiguredTimeZone() {
     TimeZone                       almaty    = TimeZone.getTimeZone("Asia/Almaty");
     RunChecker_FromHMS_ToHMS_Every checker   = new RunChecker_FromHMS_ToHMS_Every(almaty, 1, 0, 0, 3, 0, 0, 30 * 60 * 1000);

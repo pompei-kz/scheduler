@@ -1,10 +1,11 @@
 package kz.pompei.scheduler.core.run_checker;
 
-import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+
+import static kz.pompei.scheduler.core.run_checker.RunCheckerUtil.setCalendarHMS;
 
 /**
  * Implementation of RunChecker that checks if a task should be run based on the hour, minute, and second of any day.
@@ -36,10 +37,8 @@ public class RunChecker_HMS implements RunChecker {
 
     GregorianCalendar calendar = new GregorianCalendar(timeZone);
     calendar.setTimeInMillis(timestampMsFrom);
-    calendar.set(Calendar.HOUR_OF_DAY, hour);
-    calendar.set(Calendar.MINUTE, minute);
-    calendar.set(Calendar.SECOND, second);
-    calendar.set(Calendar.MILLISECOND, 0);
+
+    setCalendarHMS(calendar, hour, minute, second);
 
     long timestampMs = calendar.getTimeInMillis();
 
