@@ -44,7 +44,21 @@ public class RunChecker_FromHMS_ToHMS_Every implements RunChecker {
   }
 
   private boolean needRunMs(long timestampMsFrom, long timestampMsTo, long runPeriodMsFrom, long runPeriodMsTo) {
-    throw new RuntimeException("2026-05-22 12:09 Created empty method body RunChecker_FromHMS_ToHMS_Every.needRunMs()");
+    long fromMs = Math.max(timestampMsFrom, runPeriodMsFrom);
+    long toMs   = Math.min(timestampMsTo, runPeriodMsTo);
+    if (toMs <= fromMs) {
+      return false;
+    }
+
+    long deltaMs = fromMs - runPeriodMsFrom;
+    long periods = deltaMs / everyMs;
+    if (deltaMs % everyMs != 0) {
+      periods++;
+    }
+
+    long timeMs = runPeriodMsFrom + everyMs * periods;
+
+    return fromMs <= timeMs && timeMs < toMs;
   }
 
 }
