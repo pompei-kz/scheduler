@@ -4,7 +4,7 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RunChecker_PERIODIC_Test {
+public class RunChecker_PERIODIC_Test extends RunCheckerTestParent {
 
   @Test
   public void needRun_shouldReturnTrueWhenFirstRunIsInsideInterval() {

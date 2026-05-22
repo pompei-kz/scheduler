@@ -1,14 +1,12 @@
 package kz.pompei.scheduler.core.run_checker;
 
-import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RunChecker_HMS_Test {
+public class RunChecker_HMS_Test extends RunCheckerTestParent {
 
-  private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
   @Test
   public void needRun_shouldReturnTrueWhenScheduledTimeIsInsideInterval() {
@@ -248,14 +246,5 @@ public class RunChecker_HMS_Test {
     //
 
     assertThat(needRun).isTrue();
-  }
-
-  private static long timestamp(TimeZone timeZone, int year, int month, int day, int hour, int minute, int second, int millisecond) {
-    GregorianCalendar calendar = new GregorianCalendar(timeZone);
-    calendar.clear();
-    //noinspection MagicConstant
-    calendar.set(year, month - 1, day, hour, minute, second);
-    calendar.set(GregorianCalendar.MILLISECOND, millisecond);
-    return calendar.getTimeInMillis();
   }
 }
