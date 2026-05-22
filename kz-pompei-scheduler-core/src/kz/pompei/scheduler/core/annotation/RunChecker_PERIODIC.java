@@ -15,7 +15,6 @@ public class RunChecker_PERIODIC implements RunChecker {
    */
   private final long offsetMs;
 
-
   /**
    * Period in milliseconds between runs.
    * The next run should be at `timestampStartedAt + offsetMs + periodMs * n`, where `n` is a non-negative integer.
@@ -39,6 +38,23 @@ public class RunChecker_PERIODIC implements RunChecker {
    * @return true if you need to run, false otherwise
    */
   @Override public boolean needRun(long timestampStartedAt, long timestampMsFrom, long timestampMsTo) {
-    throw new RuntimeException("2026-05-22 07:26 Not impl yet RunChecker_PERIODIC.needRun()");
+    if (timestampMsTo <= timestampMsFrom || periodMs <= 0) {
+      return false;
+    }
+
+    long firstTimestampMs = timestampStartedAt + offsetMs;
+    if (timestampMsFrom <= firstTimestampMs) {
+      return firstTimestampMs < timestampMsTo;
+    }
+
+    long deltaMs = timestampMsFrom - firstTimestampMs;
+    long periods = deltaMs / periodMs;
+    if (deltaMs % periodMs != 0) {
+      periods++;
+    }
+
+    long timestampMs = firstTimestampMs + periodMs * periods;
+
+    return timestampMs < timestampMsTo;
   }
 }
