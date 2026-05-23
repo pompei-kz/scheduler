@@ -1,10 +1,10 @@
-package kz.pompei.scheduler.core.run_checker;
+package kz.pompei.scheduler.core;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
-public abstract class RunCheckerTestParent {
+public abstract class TestParent {
 
   protected static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 

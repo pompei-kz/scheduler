@@ -1,10 +1,11 @@
 package kz.pompei.scheduler.core.run_checker;
 
+import kz.pompei.scheduler.core.TestParent;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RunChecker_PERIODIC_Test extends RunCheckerTestParent {
+public class RunChecker_PERIODIC_Test extends TestParent {
 
   @Test
   public void needRun_shouldReturnTrueWhenFirstRunIsInsideInterval() {

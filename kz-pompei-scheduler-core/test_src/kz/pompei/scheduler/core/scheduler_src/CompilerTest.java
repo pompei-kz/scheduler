@@ -1,0 +1,238 @@
+package kz.pompei.scheduler.core.scheduler_src;
+
+import kz.pompei.scheduler.core.TestParent;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+public class CompilerTest extends TestParent {
+
+  @SuppressWarnings("SpellCheckingInspection")
+  @DataProvider
+  public Object[][] scheduleExpressionsFromJavadoc() {
+    long mondayMay25StartedAt = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+
+    return new Object[][]{
+      {
+        "hh:MM",
+        "13:00",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0)
+      },
+      {
+        "hh:MM:SS",
+        "13:00:15",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 13, 0, 15, 0),
+        timestamp(UTC, 2026, 5, 25, 13, 0, 16, 0)
+      },
+      {
+        "hh:MM - hh:MM",
+        "10:00 - 12:00",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 30, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 30, 1, 0)
+      },
+      {
+        "hh:MM:SS - hh:MM:SS",
+        "10:00:15 - 12:00:45",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 30, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 30, 1, 0)
+      },
+      {
+        "hh:MM - hh:MM every PERIOD",
+        "10:00 - 12:00 every 30 min",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 30, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 30, 1, 0)
+      },
+      {
+        "hh:MM - hh:MM кажд... PERIOD",
+        "10:00 - 12:00 каждую 30 минут",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 30, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 30, 1, 0)
+      },
+      {
+        "day D",
+        "day 25",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 0, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 0, 1, 0)
+      },
+      {
+        "day-of-week",
+        "Monday",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 0, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 0, 1, 0)
+      },
+      {
+        "Month",
+        "May",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 0, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 0, 1, 0)
+      },
+      {
+        "YYYY year",
+        "2026 year",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 0, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 0, 1, 0)
+      },
+      {
+        "YYYY год",
+        "2026 год",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 0, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 0, 1, 0)
+      },
+      {
+        "YYYY г.",
+        "2026 г.",
+        mondayMay25StartedAt,
+        timestamp(UTC, 2026, 5, 25, 10, 0, 0, 0),
+        timestamp(UTC, 2026, 5, 25, 10, 0, 1, 0)
+      },
+      {
+        "repeat every PERIOD",
+        "repeat every 10 s",
+        1_000L,
+        11_000L,
+        12_000L
+      },
+      {
+        "повторять каждые PERIOD",
+        "повторять каждые 10 секунд",
+        1_000L,
+        11_000L,
+        12_000L
+      },
+      {
+        "repeat every PERIOD starts with PERIOD",
+        "repeat every 10 s starts with 5 s",
+        1_000L,
+        6_000L,
+        7_000L
+      },
+      {
+        "повторять каждые PERIOD начиная с PERIOD",
+        "повторять каждые 10 секунд начиная с 5 секунд",
+        1_000L,
+        6_000L,
+        7_000L
+      }
+    };
+  }
+
+  @Test(dataProvider = "scheduleExpressionsFromJavadoc")
+  public void compile_shouldParseSchedulerExpressionsDescribedInJavadoc(String caseName,
+                                                                        String expression,
+                                                                        long startedAt,
+                                                                        long from,
+                                                                        long to) {
+    ScheduleSrc schedule = Compiler.compile(expression, UTC);
+
+    //
+    //
+    boolean needRun = schedule.needRun(startedAt, from, to);
+    //
+    //
+
+    assertThat(needRun).as(caseName).isTrue();
+  }
+
+  @Test
+  public void compile_shouldParseTimeAndDayOfWeekIntersection() {
+    ScheduleSrc schedule = Compiler.compile("13:00 * Monday", UTC);
+    long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from     = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
+    long        to       = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(needRun).isTrue();
+  }
+
+  @Test
+  public void compile_shouldRespectOperatorPrecedenceAndParentheses() {
+    ScheduleSrc withoutParentheses = Compiler.compile("13:00 + 14:00 * Tuesday", UTC);
+    ScheduleSrc withParentheses    = Compiler.compile("(13:00 + 14:00) * Tuesday", UTC);
+    long        started            = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from               = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
+    long        to                 = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
+
+    //
+    //
+    boolean needRunWithoutParentheses = withoutParentheses.needRun(started, from, to);
+    boolean needRunWithParentheses    = withParentheses.needRun(started, from, to);
+    //
+    //
+
+    assertThat(needRunWithoutParentheses).isTrue();
+    assertThat(needRunWithParentheses).isFalse();
+  }
+
+  @Test
+  public void compile_shouldParseTimeRangeWithEveryPeriod() {
+    ScheduleSrc schedule = Compiler.compile("10:00 - 12:00 every 30 min", UTC);
+    long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from     = timestamp(UTC, 2026, 5, 25, 10, 30, 0, 0);
+    long        to       = timestamp(UTC, 2026, 5, 25, 10, 30, 1, 0);
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(needRun).isTrue();
+  }
+
+  @Test
+  public void compile_shouldParseRepeatEveryWithStartOffset() {
+    ScheduleSrc schedule = Compiler.compile("repeat every 10 s starts with 5 s", UTC);
+    long        started  = 1_000;
+    long        from     = 6_000;
+    long        to       = 7_000;
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(needRun).isTrue();
+  }
+
+  @Test
+  public void compile_shouldParseRussianAliases() {
+    ScheduleSrc schedule = Compiler.compile("10:00 - 11:00 каждую 15 минут * Пн * Май * 2026 год", UTC);
+    long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from     = timestamp(UTC, 2026, 5, 25, 10, 15, 0, 0);
+    long        to       = timestamp(UTC, 2026, 5, 25, 10, 15, 1, 0);
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(needRun).isTrue();
+  }
+
+  @Test
+  public void compile_shouldThrowSchedulerCompileErrForUnknownExpression() {
+    assertThatThrownBy(() -> Compiler.compile("unknown", UTC)).isInstanceOf(SchedulerCompileErr.class)
+                                                              .hasMessageContaining("Expected schedule expression");
+  }
+}

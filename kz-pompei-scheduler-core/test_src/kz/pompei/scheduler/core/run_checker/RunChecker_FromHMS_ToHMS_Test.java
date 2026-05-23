@@ -1,11 +1,12 @@
 package kz.pompei.scheduler.core.run_checker;
 
 import java.util.TimeZone;
+import kz.pompei.scheduler.core.TestParent;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RunChecker_FromHMS_ToHMS_Test extends RunCheckerTestParent {
+public class RunChecker_FromHMS_ToHMS_Test extends TestParent {
 
 
   @Test

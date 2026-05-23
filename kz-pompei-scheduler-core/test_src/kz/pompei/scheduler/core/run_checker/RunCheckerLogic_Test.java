@@ -1,12 +1,13 @@
 package kz.pompei.scheduler.core.run_checker;
 
+import kz.pompei.scheduler.core.TestParent;
 import org.testng.annotations.Test;
 
 import static kz.pompei.scheduler.core.run_checker.LogicOp.AND;
 import static kz.pompei.scheduler.core.run_checker.LogicOp.OR;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RunCheckerLogic_Test extends RunCheckerTestParent {
+public class RunCheckerLogic_Test extends TestParent {
 
   @Test
   public void needRun_shouldReturnTrueForAndWhenBothArgumentsReturnTrue() {
