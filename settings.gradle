@@ -1,3 +1,4 @@
 rootProject.name = 'kz-pompei-scheduler'
 
 include ":kz-pompei-scheduler-core"
+include ":kz-pompei-fui"
