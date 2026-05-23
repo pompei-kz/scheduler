@@ -41,7 +41,7 @@ subprojects {
 
   dependencies {
 
-    ext.kz_pompei_hotconfig_version = "0.0.3"
+    ext.kz_pompei_hotconfig_version = "0.0.5"
 
     ext.postgres_version = "42.7.8"
     ext.mariadb_version = "3.5.8"

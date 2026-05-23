@@ -86,9 +86,9 @@ public class SchedulerBuilder {
     return this;
   }
 
-  // TODO regenerate this method for all fields
 
   public String toString() {
+    // TODO regenerate this method for all fields - it must begin from `getClass().getSimpleName()`
     return getClass().getSimpleName()
       + "(timeZoneDefault=" + this.timeZoneDefault
       + ", runTaskThreadLoopSleepMs=" + this.runTaskThreadLoopSleepMs

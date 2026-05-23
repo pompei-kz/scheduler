@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import kz.pompei.hotconfig.core.ConfigTunnel;
@@ -17,6 +18,8 @@ import kz.pompei.hotconfig.core.model.Conf;
 import kz.pompei.hotconfig.core.model.ConfParam;
 import kz.pompei.scheduler.core.annotation.FromConf;
 import kz.pompei.scheduler.core.annotation.Schedule;
+import kz.pompei.scheduler.core.annotation.UseTimeZone;
+import kz.pompei.scheduler.core.scheduler_src.CompileResult;
 import kz.pompei.scheduler.core.scheduler_src.Compiler;
 import kz.pompei.scheduler.core.scheduler_src.ScheduleSrc;
 import lombok.NonNull;
@@ -27,7 +30,7 @@ import static kz.pompei.scheduler.core.ReflectUtil.findAnnotation;
 public class ObjectTaskCollector {
 
   private final @NonNull ConfigTunnel tunnel;
-  @NonNull private final Def          def;
+  private final @NonNull Def          def;
 
   private final List<Runnable> refreshHandlers = new ArrayList<>();
 
@@ -42,7 +45,8 @@ public class ObjectTaskCollector {
 
   @RequiredArgsConstructor
   static class Def {
-    final @NonNull String extension;
+    final @NonNull String   extension;
+    final @NonNull TimeZone timeZoneDefault;
   }
 
   public void refresh() {
@@ -69,7 +73,12 @@ public class ObjectTaskCollector {
 
       if (findAnnotation(method, FromConf.class).isEmpty()) {
         ret.add(new ScheduledTask() {
-          @NonNull final ScheduleSrc scheduleSrc = Compiler.compile(schedule.ann.value());
+          @NonNull final TimeZone timeZone = findAnnotation(method, UseTimeZone.class).map(x -> x.ann)
+                                                                                      .map(UseTimeZone::value)
+                                                                                      .map(TimeZone::getTimeZone)
+                                                                                      .orElseGet(() -> def.timeZoneDefault);
+
+          @NonNull final ScheduleSrc scheduleSrc = Compiler.compile(schedule.ann.value(), timeZone);
           @NonNull final Task        task        = createTask(object, method);
 
           @Override public @NonNull ScheduleSrc src() {
@@ -89,11 +98,13 @@ public class ObjectTaskCollector {
       taskName_to_task.put(taskName, task);
 
       ConfParam confParam = new ConfParam(taskName, schedule.ann.value());
+
       confDefault.params.add(confParam);
 
       findAnnotation(method, ConfDoc.class).ifPresent(paramDoc -> confParam.comment(paramDoc.ann.value()));
 
       ret.add(new ScheduledTask() {
+
         @Override public @NonNull ScheduleSrc src() {
           ScheduleSrc scheduleSrc = taskName_to_src.get(taskName);
           return scheduleSrc != null ? scheduleSrc : ScheduleSrc.NEVER_RUN;
@@ -157,17 +168,26 @@ public class ObjectTaskCollector {
         lastModificationMarker.set(modificationMarker);
       }
 
+      //
+      //
+      CompileResult compileResult = Compiler.compileAll(conf.params, def.timeZoneDefault, taskName_to_task.keySet());
+      //
+      //
+
+      tunnel.writeNoticeLines(localPath, compileResult.noticeMessages);
+
       for (ConfParam param : conf.params) {
-        Task task = taskName_to_task.get(param.name);
+        String taskName = param.name;
+        Task   task     = taskName_to_task.get(taskName);
         if (task == null) continue;
 
-        //
-        //
-        ScheduleSrc scheduleSrc = Compiler.compile(param.valueStr);
-        //
-        //
+        ScheduleSrc scheduleSrc = compileResult.taskName_to_scheduleSrc.get(taskName);
 
-        taskName_to_src.put(param.name, scheduleSrc);
+        if (scheduleSrc == null) {
+          taskName_to_src.put(taskName, ScheduleSrc.NEVER_RUN);
+        } else {
+          taskName_to_src.put(taskName, scheduleSrc);
+        }
       }
     };
 
