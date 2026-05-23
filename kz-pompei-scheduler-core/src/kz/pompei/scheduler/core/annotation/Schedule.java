@@ -328,7 +328,8 @@ import java.lang.annotation.Target;
  *      <br>{@code повторять каждые PERIOD начиная с PERIOD}
  *      </td>
  *      <td>Discrete</td>
- *      <td> TODO describe here </td>
+ *      <td>Describes periodic instants counted from scheduler start plus the specified start offset.
+ *      The first instant is at scheduler start plus the offset, and the next instants repeat after each period.</td>
  *      <td>{@code RunChecker_PERIODIC}</td>
  *    </tr>
  *  </table>
