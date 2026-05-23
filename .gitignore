@@ -18,6 +18,7 @@
 !/.idea
 /.idea/*
 !/.idea/codeStyles
+!/.idea/dictionaries
 !/.idea/inspectionProfiles
 !/.idea/runConfigurations
 */**/.idea

@@ -193,7 +193,24 @@ import java.lang.annotation.Target;
  *     {@code SS} — seconds of a minute from 00 to 59.
  *     It can be specified as two numbers.
  *     Single number is not allowed.
- *
+ *   <li>
+ *     {@code D} — day of month from 1 to 31.
+ *     It can be specified as a single number.
+ *   <li>
+ *     {@code Week} - a name of week.
+ *     It can be specified as a single word.
+ *     <ul>
+ *       <li>Full name in English:
+ *          Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday
+ *       <li>First three letters of a name in English:
+ *         mon, tue, wed, thu, fri, sat, sun
+ *       <li>Full name in Russian:
+ *         Воскресенье, Понедельник, Вторник, Среда, Четверг, Пятница, Суббота
+ *       <li>First three letters of a name in Russian:
+ *         Вос, Пон, Вто, Сре, Чет, Пят, Суб
+ *       <li>Or two letters:
+ *         Вс, Пн, Вт, Ср, Чт, Пт, Сб
+ *     </ul>
  *   <li>
  *     {@code Month} — name of a month. It can be:
  *
@@ -218,8 +235,29 @@ import java.lang.annotation.Target;
  *     <li>
  *       {@code YYYY} - year in four digits.
  *
- *       <li>
- *         {@code []} - square brackets indicate optional parts of the expression
+ *     <li>
+ *       {@code []} - square brackets indicate optional parts of the expression
+ *
+ *     <li>
+ *       {@code PERIOD} - describes periodicity of the expression. Consists of a positive integer followed by a time unit (e.g., '1 h', '2 d', '3 m').
+ *       Time units:
+ *
+ *       <ul>
+ *         <li>ms, millis, milliseconds, мс, миллисекунд... (с любым окончанием):
+ *           Milliseconds
+ *         <li>s, sec, seconds, с, сек, сек...(с любым окончанием):
+ *           Seconds
+ *         <li>m, min, minute, minutes, м, минут...(с любым окончанием):
+ *           Minutes
+ *         <li>р, hour, hours, ч, час...(с любым окончанием):
+ *           Hours
+ *         <li>d, day, days, д, дн, дня...(с любым окончанием):
+ *           Days
+ *         <li>month, months, мес, месяца...(с любым окончанием):
+ *           Months
+ *         <li>y, year, years, г, лет, года...(с любым окончанием):
+ *           Years
+ *       </ul>
  * </ul>
  *
  *  <table border="1">
@@ -227,22 +265,73 @@ import java.lang.annotation.Target;
  *      <th>Scheduler Expression</th>
  *      <th>Category of temporal set</th>
  *      <th>Description</th>
- *      <th>Inner class</th>
+ *      <th>Implementation</th>
  *    </tr>
  *    <tr>
- *      <td>hh:MM[:SS]</td>
+ *      <td>{@code hh:MM[:SS]}</td>
  *      <td>Discrete</td>
- *      <td>Describes a specific time of day. This expression generates a temporal set representing that time each day.</td>
- *      <td>RunChecker_HMS</td>
+ *      <td>Describes a specific time of day. The task is selected when the checked time range contains that time on the current day.</td>
+ *      <td>{@code RunChecker_HMS}</td>
  *    </tr>
  *    <tr>
- *      <td>Month</td>
+ *      <td>{@code hh:MM[:SS] - hh:MM[:SS]}</td>
  *      <td>Continuous</td>
- *      <td>Describes a specific month. This expression generates a temporal set representing that month each year.</td>
- *      <td>RunChecker_MONTH</td>
+ *      <td>Describes a time interval inside a day. The task is selected when the checked time range intersects that interval.</td>
+ *      <td>{@code RunChecker_FromHMS_ToHMS}</td>
+ *    </tr>
+ *    <tr>
+ *      <td>{@code hh:MM[:SS] - hh:MM[:SS] every PERIOD}
+ *      <br>
+ *      {@code hh:MM[:SS] - hh:MM[:SS] кажд...(с слюбым окончанием) PERIOD}</td>
+ *      <td>Discrete</td>
+ *      <td>Describes periodic instants inside a daily time interval. The task is selected when the checked time range contains one of these instants.</td>
+ *      <td>{@code RunChecker_FromHMS_ToHMS_Every}</td>
+ *    </tr>
+ *    <tr>
+ *      <td>{@code day D}</td>
+ *      <td>Continuous</td>
+ *      <td>Describes a specific day of the month. The task is selected while the checked time range belongs to that day in the configured time zone.</td>
+ *      <td>{@code RunChecker_DAY_OF_MONTH}</td>
+ *    </tr>
+ *    <tr>
+ *      <td>{@code day-of-week}</td>
+ *      <td>Continuous</td>
+ *      <td>Describes a specific day of the week. The task is selected while the checked time range belongs to that day in the configured time zone.</td>
+ *      <td>{@code RunChecker_DAY_OF_WEEK}</td>
+ *    </tr>
+ *    <tr>
+ *      <td>{@code Month}</td>
+ *      <td>Continuous</td>
+ *      <td>Describes a specific month. The task is selected while the checked time range belongs to that month in the configured time zone.</td>
+ *      <td>{@code RunChecker_MONTH}</td>
+ *    </tr>
+ *    <tr>
+ *      <td>{@code YYYY year}
+ *      <br>{@code YYYY год}
+ *      <br>{@code YYYY г.}
+ *      </td>
+ *      <td>Continuous</td>
+ *      <td>Describes a specific year. The task is selected while the checked time range belongs to that year in the configured time zone.</td>
+ *      <td>{@code RunChecker_YEAR}</td>
+ *    </tr>
+ *    <tr>
+ *      <td>{@code repeat every PERIOD}
+ *      <br>{@code повторять каждые PERIOD}
+ *      </td>
+ *      <td>Discrete</td>
+ *      <td>Describes periodic instants counted from scheduler start plus an offset.
+ *      The task is selected when the checked time range contains one of these instants.</td>
+ *      <td>{@code RunChecker_PERIODIC}</td>
+ *    </tr>
+ *    <tr>
+ *      <td>{@code repeat every PERIOD starts with PERIOD}
+ *      <br>{@code повторять каждые PERIOD начиная с PERIOD}
+ *      </td>
+ *      <td>Discrete</td>
+ *      <td> TODO describe here </td>
+ *      <td>{@code RunChecker_PERIODIC}</td>
  *    </tr>
  *  </table>
- *
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
