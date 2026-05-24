@@ -518,11 +518,11 @@ public class Compiler {
       return index >= 0 && index < source.length() && (Character.isLetterOrDigit(source.charAt(index)) || source.charAt(index) == '_');
     }
 
-    private SchedulerCompileErr err(String message) {
+    private @NonNull SchedulerCompileErr err(String message) {
       return errAt(pos, message);
     }
 
-    private SchedulerCompileErr errAt(int errPos, String message) {
+    private @NonNull SchedulerCompileErr errAt(int errPos, String message) {
       return new SchedulerCompileErr(message + "\n" + source + "\n" + " ".repeat(Math.max(0, errPos)) + "^");
     }
   }

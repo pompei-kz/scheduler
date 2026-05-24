@@ -1,0 +1,12 @@
+dependencies {
+  implementation project(":kz-pompei-scheduler-core")
+  implementation "kz.pompei.fui:kz-pompei-fui:$kz_pompei_fui_version"
+  implementation "kz.pompei.hotconfig:kz-pompei-hotconfig-core:$kz_pompei_hotconfig_version"
+}
+
+tasks.register("tst-app", JavaExec) {
+  group = "application"
+  description = "Runs the test application Main class."
+  classpath = sourceSets.main.runtimeClasspath
+  mainClass = "app.Main"
+}
