@@ -21,7 +21,7 @@ public class RunChecker_HMS implements RunChecker {
    * <p>
    * Then (year, month, day), `hour`, `minute`, `second` converts to milliseconds (using GregorianCalendar) to variable `timestampMs`.
    * <p>
-   * And then returns true if `timestampMsFrom` <= `timestampMs` < `timestampMsTo`.
+   * And then returns true if {@code timestampMsFrom <= timestampMs && timestampMs < timestampMsTo}.
    * <p>
    * Note, the first sign contains equals, the second sign does not contain equals.
    *

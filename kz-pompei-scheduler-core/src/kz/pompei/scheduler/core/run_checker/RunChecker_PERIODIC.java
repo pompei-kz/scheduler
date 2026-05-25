@@ -26,7 +26,7 @@ public class RunChecker_PERIODIC implements RunChecker {
    *
    * Let ts = timestampStartedAt + offsetMs + periodMs * n
    * <p>
-   * Return true if timestampStartedAt + timestampMsFrom <= ts < timestampStartedAt + timestampMsTo
+   * Return true if {@code timestampStartedAt + timestampMsFrom <= ts && ts < timestampStartedAt + timestampMsTo}
    * <p>
    * Otherwise false.
    * <p>

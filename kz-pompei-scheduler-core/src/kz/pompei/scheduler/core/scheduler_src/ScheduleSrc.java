@@ -8,7 +8,8 @@ import org.jetbrains.annotations.Nullable;
 public interface ScheduleSrc {
 
   /**
-   * Check does this task must be run in the interval of time: timestampFrom <= time && time < timestampTo.
+   * Check does this task must be run in the interval of time:
+   * {@code timestampFrom <= time && time < timestampTo}.
    * <p>
    * This interval is closed from left and open from right.
    *

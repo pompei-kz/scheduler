@@ -1,0 +1,9 @@
+plugins {
+  id 'goto-maven'
+}
+
+gotoMaven {
+  publicationModules = [
+    ':kz-pompei-scheduler-core',
+  ]
+}

@@ -1,3 +1,39 @@
+plugins {
+  id "maven-publish"
+  id 'java-library'
+  id 'kz-pompei-publication'
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+    }
+  }
+}
+
+kzPompeiPublication {
+  pom {
+    name = 'kz-pompei-fui'
+    description = 'Scheduler with hot config'
+    url = 'https://pompei.kz/programs/kz-pompei-scheduler'
+  }
+
+  developers {
+    developer {
+      id = 'pompei'
+      name = 'Evgenij Kolpakov'
+      email = 'pompei@mail.ru'
+    }
+  }
+
+  scm {
+    connection = 'scm:git:https://github.com/pompei-kz/scheduler.git'
+    developerConnection = 'scm:git:ssh://git@github.com:pompei-kz/scheduler.git'
+    url = 'https://github.com/pompei-kz/scheduler'
+  }
+}
+
 dependencies {
   implementation "kz.pompei.hotconfig:kz-pompei-hotconfig-core:$kz_pompei_hotconfig_version"
 }
