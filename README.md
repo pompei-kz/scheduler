@@ -49,6 +49,7 @@ Add this to build.gradle / dependencies
 
 ```groovy
 implementation "kz.pompei.scheduler:kz-pompei-scheduler-core:0.0.1"
+implementation "kz.pompei.hotconfig:kz-pompei-hotconfig-core:0.0.7"
 ```
 
 ### 2. Define Scheduled Methods
@@ -116,7 +117,8 @@ This stops scheduler loops, shuts down created executors, and waits until runnin
 
 ## Installation
 
-The library requires Java 21.
+The library requires Java 21. Add both scheduler core and hotconfig core:
+scheduler uses hotconfig `ConfigTunnel` APIs for configuration-backed schedules.
 
 ### Gradle
 
@@ -127,6 +129,7 @@ repositories {
 
 dependencies {
   implementation "kz.pompei.scheduler:kz-pompei-scheduler-core:0.0.1"
+  implementation "kz.pompei.hotconfig:kz-pompei-hotconfig-core:0.0.7"
 }
 ```
 
@@ -138,6 +141,11 @@ dependencies {
     <groupId>kz.pompei.scheduler</groupId>
     <artifactId>kz-pompei-scheduler-core</artifactId>
     <version>0.0.1</version>
+  </dependency>
+  <dependency>
+    <groupId>kz.pompei.hotconfig</groupId>
+    <artifactId>kz-pompei-hotconfig-core</artifactId>
+    <version>0.0.7</version>
   </dependency>
 </dependencies>
 ```
