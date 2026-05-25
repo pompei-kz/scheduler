@@ -170,11 +170,11 @@ public class ReportJobs {
 
 Annotations:
 
-| Annotation               | Target | Purpose                                                       |
-|--------------------------|--------|---------------------------------------------------------------|
-| `@Schedule("text")`     | method | Defines schedule text for a task.                             |
-| `@FromConf`              | method | Loads and refreshes this method schedule from configuration.   |
-| `@UseTimeZone("zone")`   | method | Sets timezone for an inline `@Schedule` method.               |
+| Annotation             | Target | Purpose                                                       |
+|------------------------|--------|---------------------------------------------------------------|
+| `@Schedule("text")`    | method | Defines schedule text for a task.                             |
+| `@FromConf`            | method | Loads and refreshes this method schedule from configuration.  |
+| `@UseTimeZone("zone")` | method | Sets timezone for an inline `@Schedule` method.               |
 
 For `@FromConf` methods, the method name becomes the configuration parameter name.
 
@@ -264,20 +264,20 @@ Schedule expressions can be combined with:
 
 Supported expressions:
 
-| Expression                                      | Description                                      |
-|-------------------------------------------------|--------------------------------------------------|
-| `hh:MM[:SS]`                                    | Specific time of day.                            |
-| `hh:MM[:SS] - hh:MM[:SS]`                      | Time interval inside a day.                      |
-| `hh:MM[:SS] - hh:MM[:SS] every PERIOD`         | Periodic instants inside a daily time interval.  |
-| `hh:MM[:SS] - hh:MM[:SS] кажд... PERIOD`       | Russian alias for interval periodicity.          |
-| `day D` / `день D`                              | Day of month, from 1 to 31.                      |
-| `Monday`, `mon`, `Понедельник`, `Пн`            | Day of week.                                     |
-| `May`, `май`                                    | Month.                                           |
-| `2026 year` / `2026 год` / `2026 г.`            | Year.                                            |
-| `repeat every PERIOD`                           | Periodic repeat from scheduler startup.          |
-| `повторять каждые PERIOD`                       | Russian alias for periodic repeat.               |
-| `repeat every PERIOD starts with PERIOD`        | Periodic repeat with start offset.               |
-| `повторять каждые PERIOD начиная с PERIOD`      | Russian alias for repeat with start offset.      |
+| Expression                                 | Description                                      |
+|--------------------------------------------|--------------------------------------------------|
+| `hh:MM[:SS]`                               | Specific time of day.                            |
+| `hh:MM[:SS] - hh:MM[:SS]`                  | Time interval inside a day.                      |
+| `hh:MM[:SS] - hh:MM[:SS] every PERIOD`     | Periodic instants inside a daily time interval.  |
+| `hh:MM[:SS] - hh:MM[:SS] кажд... PERIOD`   | Russian alias for interval periodicity.          |
+| `day D` / `день D`                         | Day of month, from 1 to 31.                      |
+| `Monday`, `mon`, `Понедельник`, `Пн`       | Day of week.                                     |
+| `May`, `май`                               | Month.                                           |
+| `2026 year` / `2026 год` / `2026 г.`       | Year.                                            |
+| `repeat every PERIOD`                      | Periodic repeat from scheduler startup.          |
+| `повторять каждые PERIOD`                  | Russian alias for periodic repeat.               |
+| `repeat every PERIOD starts with PERIOD`   | Periodic repeat with start offset.               |
+| `повторять каждые PERIOD начиная с PERIOD` | Russian alias for repeat with start offset.      |
 
 Examples:
 
@@ -311,17 +311,17 @@ import kz.pompei.scheduler.core.Scheduler;
 import kz.pompei.scheduler.core.SchedulerPools;
 
 Scheduler scheduler = Scheduler.builder()
-  .executor("background-pool", () -> Executors.newFixedThreadPool(4))
-  .executor(SchedulerPools.VIRTUAL, Executors::newVirtualThreadPerTaskExecutor)
-  .build();
+                               .executor("background-pool", () -> Executors.newFixedThreadPool(4))
+                               .executor(SchedulerPools.VIRTUAL, Executors::newVirtualThreadPerTaskExecutor)
+                               .build();
 ```
 
 Built-in executor names:
 
-| Name                       | Executor supplier                         |
-|----------------------------|-------------------------------------------|
-| `SchedulerPools.FIXED_1`   | `Executors.newFixedThreadPool(1)`         |
-| `SchedulerPools.VIRTUAL`   | `Executors.newVirtualThreadPerTaskExecutor()` |
+| Name                      | Executor supplier                             |
+|---------------------------|-----------------------------------------------|
+| `SchedulerPools.FIXED_1`  | `Executors.newFixedThreadPool(1)`             |
+| `SchedulerPools.VIRTUAL`  | `Executors.newVirtualThreadPerTaskExecutor()` |
 
 If a schedule selects an unknown executor name, the scheduler uses the default executor.
 
