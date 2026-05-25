@@ -8,10 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import kz.pompei.hotconfig.core.ConfigTunnel;
 import kz.pompei.hotconfig.core.ann.ConfDoc;
 import kz.pompei.hotconfig.core.ann.ConfFolder;
 import kz.pompei.hotconfig.core.model.Conf;
@@ -23,41 +23,26 @@ import kz.pompei.scheduler.core.scheduler_src.CompileResult;
 import kz.pompei.scheduler.core.scheduler_src.Compiler;
 import kz.pompei.scheduler.core.scheduler_src.ScheduleSrc;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
 import static kz.pompei.scheduler.core.ReflectUtil.findAnnotation;
 
-public class ObjectTaskCollector {
+public class Collector {
 
-  private final @NonNull ConfigTunnel tunnel;
-  private final @NonNull Def          def;
+  private final @NonNull Scheduler.Def  def;
+  private final          List<Runnable> refreshHandlers = new ArrayList<>();
 
-  private final List<Runnable> refreshHandlers = new ArrayList<>();
-
-  ObjectTaskCollector(@NonNull ConfigTunnel tunnel, @NonNull Def def) {
-    this.tunnel = tunnel;
-    this.def    = def;
+  Collector(@NonNull Scheduler.Def def) {
+    this.def = def;
   }
 
-  public static @NonNull ObjectTaskCollectorBuilder builder() {
-    return new ObjectTaskCollectorBuilder();
-  }
-
-  @RequiredArgsConstructor
-  static class Def {
-    final @NonNull String   extension;
-    final @NonNull TimeZone timeZoneDefault;
-  }
-
-  public void refresh() {
+  void refresh() {
     refreshHandlers.forEach(Runnable::run);
   }
 
   public @NonNull List<ScheduledTask> collect(@NonNull Object object) {
-    List<ScheduledTask> ret         = new ArrayList<>();
-    Method[]            methods     = object.getClass().getMethods();
-    Conf                confDefault = new Conf();
-
+    List<ScheduledTask>                    ret              = new ArrayList<>();
+    Method[]                               methods          = object.getClass().getMethods();
+    Conf                                   confDefault      = new Conf();
     Map<String, Task>                      taskName_to_task = new HashMap<>();
     ConcurrentHashMap<String, ScheduleSrc> taskName_to_src  = new ConcurrentHashMap<>();
 
@@ -76,7 +61,7 @@ public class ObjectTaskCollector {
           @NonNull final TimeZone timeZone = findAnnotation(method, UseTimeZone.class).map(x -> x.ann)
                                                                                       .map(UseTimeZone::value)
                                                                                       .map(TimeZone::getTimeZone)
-                                                                                      .orElseGet(() -> def.timeZoneDefault);
+                                                                                      .orElseGet(def::getTimezone);
 
           @NonNull final ScheduleSrc scheduleSrc = Compiler.compile(schedule.ann.value(), timeZone);
           @NonNull final Task        task        = createTask(object, method);
@@ -124,17 +109,17 @@ public class ObjectTaskCollector {
       classConfDoc -> Collections.addAll(confDefault.confComments, classConfDoc.ann.value().split("\n")));
 
     @NonNull String folder    = findAnnotation(object.getClass(), ConfFolder.class).map(s -> s + "/").orElse("");
-    @NonNull String localPath = folder + object.getClass().getSimpleName() + def.extension;
+    @NonNull String localPath = folder + object.getClass().getSimpleName() + def.configExtension;
 
     AtomicLong lastModificationMarker = new AtomicLong(0L);
 
     Runnable update = () -> {
-      Conf conf               = tunnel.read(localPath);
-      Long modificationMarker = tunnel.modificationMarker(localPath);
+      Conf conf               = def.tunnel.read(localPath);
+      Long modificationMarker = def.tunnel.modificationMarker(localPath);
 
       if (conf == null || modificationMarker == null) {
-        tunnel.write(localPath, confDefault);
-        modificationMarker = tunnel.modificationMarker(localPath);
+        def.tunnel.write(localPath, confDefault);
+        modificationMarker = def.tunnel.modificationMarker(localPath);
         conf               = confDefault;
       } else {
 
@@ -159,8 +144,8 @@ public class ObjectTaskCollector {
         }
 
         if (changed) {
-          tunnel.write(localPath, confNew);
-          modificationMarker = tunnel.modificationMarker(localPath);
+          def.tunnel.write(localPath, confNew);
+          modificationMarker = def.tunnel.modificationMarker(localPath);
           conf               = confNew;
         }
       }
@@ -170,35 +155,36 @@ public class ObjectTaskCollector {
 
       //
       //
-      CompileResult compileResult = Compiler.compileAll(conf.params, def.timeZoneDefault, taskName_to_task.keySet());
+      CompileResult compileResult = Compiler.compileAll(conf.params, def.getTimezone(), taskName_to_task.keySet(), def.taskErrorConsumer);
       //
       //
 
-      tunnel.writeNoticeLines(localPath, compileResult.noticeMessages);
+      def.tunnel.writeNoticeLines(localPath, compileResult.noticeMessages);
 
       for (ConfParam param : conf.params) {
         String taskName = param.name;
         Task   task     = taskName_to_task.get(taskName);
         if (task == null) continue;
 
-        ScheduleSrc scheduleSrc = compileResult.taskName_to_scheduleSrc.get(taskName);
+        ScheduleSrc scheduleSrc = Optional.of(compileResult)
+                                          .map(x -> x.taskName_to_scheduleSrc.get(taskName))
+                                          .map(x -> x.src)
+                                          .orElse(ScheduleSrc.NEVER_RUN);
 
-        if (scheduleSrc == null) {
-          taskName_to_src.put(taskName, ScheduleSrc.NEVER_RUN);
-        } else {
-          taskName_to_src.put(taskName, scheduleSrc);
-        }
+        taskName_to_src.put(taskName, scheduleSrc);
       }
     };
 
     refreshHandlers.add(() -> {
 
-      Long modificationMarker = tunnel.modificationMarker(localPath);
+      Long modificationMarker = def.tunnel.modificationMarker(localPath);
       if (modificationMarker == null) return;
       if (lastModificationMarker.longValue() == modificationMarker) return;
 
       update.run();
     });
+
+    update.run();
 
     return ret;
   }

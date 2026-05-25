@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import kz.pompei.hotconfig.core.ConfigTunnel;
 import kz.pompei.scheduler.core.scheduler_src.ScheduleSrc;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class Scheduler {
   private final @NonNull Def           def;
+  private final @NonNull Collector     collector;
   private final @NonNull AtomicBoolean working = new AtomicBoolean(true);
 
   private final ConcurrentHashMap<Integer, ScheduledTask> taskId_to_task = new ConcurrentHashMap<>();
@@ -29,8 +31,9 @@ public class Scheduler {
   private final AtomicInteger taskIdSource = new AtomicInteger(1);
   private final AtomicLong    runIdSource  = new AtomicLong(1L);
 
-  Scheduler(@NonNull Def def) {
-    this.def = def;
+  Scheduler(@NonNull Def def, Collector collector) {
+    this.def       = def;
+    this.collector = collector;
   }
 
   public static @NonNull SchedulerBuilder builder() {
@@ -46,6 +49,8 @@ public class Scheduler {
     final @NonNull  Supplier<ExecutorService>              executorDefaultSupplier;
     final @NonNull  Map<String, Supplier<ExecutorService>> executorSupplierMap;
     final @NonNull  Consumer<Throwable>                    taskErrorConsumer;
+    final @NonNull  String                                 configExtension;
+    final @NonNull  ConfigTunnel                           tunnel;
 
     @NonNull TimeZone getTimezone() {
       return timeZoneDefault != null ? (TimeZone) timeZoneDefault.clone() : TimeZone.getDefault();
@@ -61,7 +66,7 @@ public class Scheduler {
   }
 
   public void startUp() {
-    new Thread(() -> {
+    Thread runThread = new Thread(() -> {
 
       final long    timestampStartedAt = System.currentTimeMillis();
       long          timestampCurrent   = timestampStartedAt;
@@ -105,8 +110,12 @@ public class Scheduler {
         runTasks(taskIdsToRun);
 
         taskIdsToRun.clear();
+
+        collector.refresh();
       }
-    }).start();
+    });
+
+    runThread.start();
   }
 
   private int runCount(int taskId) {
@@ -179,7 +188,6 @@ public class Scheduler {
 
     @NonNull ConcurrentHashMap<Long, Thread> runId_to_thread = taskId_runId_to_thread.computeIfAbsent(taskId, __ -> new ConcurrentHashMap<>());
 
-
     executorService.submit(() -> {
       long   runId  = runIdSource.getAndIncrement();
       Thread thread = Thread.currentThread();
@@ -199,8 +207,12 @@ public class Scheduler {
       } finally {
         runId_to_thread.remove(runId);
       }
-
-
     });
   }
+
+  public void collectFromObject(@NonNull Object object) {
+    List<ScheduledTask> tasks = collector.collect(object);
+    addAll(tasks);
+  }
+
 }

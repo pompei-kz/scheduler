@@ -2,11 +2,14 @@ package kz.pompei.scheduler.core;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import kz.pompei.hotconfig.core.ConfigTunnel;
+import kz.pompei.hotconfig.core.ConfigTunnelMem;
 import lombok.NonNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,7 +22,9 @@ public class SchedulerBuilder {
   private @NonNull  Consumer<Throwable>                    taskErrorConsumer        = Throwable::printStackTrace;
   private @NonNull  Supplier<ExecutorService>              executorDefaultSupplier  = () -> Executors.newFixedThreadPool(3);
   private final     Map<String, Supplier<ExecutorService>> executorSupplierMap      = new HashMap<>();
-  private           long                                   runTaskThreadLoopSleepMs = 350;
+  private @NonNull  String                                 configExtension          = ".scheduler";
+  private           long                                   runTaskThreadLoopSleepMs = 1300;
+  private @NonNull  ConfigTunnel                           tunnel                   = new ConfigTunnelMem();
 
   SchedulerBuilder() {
     executorSupplierMap.put(SchedulerPools.FIXED_1, () -> Executors.newFixedThreadPool(1));
@@ -36,6 +41,29 @@ public class SchedulerBuilder {
     this.schedulerName = schedulerName;
     return this;
   }
+
+  /**
+   * Defines tunnel to save configuration
+   *
+   * @param tunnel tunnel to save configuration
+   * @return this
+   */
+  public SchedulerBuilder tunnel(@NonNull ConfigTunnel tunnel) {
+    this.tunnel = tunnel;
+    return this;
+  }
+
+  /**
+   * Set the file extension for the task collector config file.
+   *
+   * @param configExtension The file extension to use
+   * @return This builder instance for method chaining
+   */
+  public SchedulerBuilder configExtension(@NonNull String configExtension) {
+    this.configExtension = configExtension;
+    return this;
+  }
+
 
   /**
    * Default time zone for scheduler.
@@ -86,13 +114,17 @@ public class SchedulerBuilder {
     return this;
   }
 
-
-  public String toString() {
-    // TODO regenerate this method for all fields - it must begin from `getClass().getSimpleName()`
-    return getClass().getSimpleName()
-      + "(timeZoneDefault=" + this.timeZoneDefault
-      + ", runTaskThreadLoopSleepMs=" + this.runTaskThreadLoopSleepMs
-      + ", executorDefaultSupplier=" + this.executorDefaultSupplier + ")";
+  @Override public String toString() {
+    return new StringJoiner(", ", getClass().getSimpleName() + "{", "}")
+      .add("configExtension='" + configExtension + "'")
+      .add("schedulerName='" + schedulerName + "'")
+      .add("timeZoneDefault=" + timeZoneDefault)
+      .add("taskErrorConsumer=" + taskErrorConsumer)
+      .add("executorDefaultSupplier=" + executorDefaultSupplier)
+      .add("executorSupplierMap=" + executorSupplierMap)
+      .add("runTaskThreadLoopSleepMs=" + runTaskThreadLoopSleepMs)
+      .add("tunnel=" + tunnel)
+      .toString();
   }
 
   /**
@@ -114,9 +146,14 @@ public class SchedulerBuilder {
    * @return scheduler manager
    */
   public @NonNull Scheduler build() {
-    return new Scheduler(new Scheduler.Def(
-      schedulerName, timeZoneDefault, runTaskThreadLoopSleepMs, executorDefaultSupplier, executorSupplierMap, taskErrorConsumer
-    ));
-  }
 
+    Scheduler.Def def = new Scheduler.Def(
+      schedulerName, timeZoneDefault, runTaskThreadLoopSleepMs, executorDefaultSupplier,
+      executorSupplierMap, taskErrorConsumer, configExtension, tunnel
+    );
+
+    Collector collector = new Collector(def);
+
+    return new Scheduler(def, collector);
+  }
 }

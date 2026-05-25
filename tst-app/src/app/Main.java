@@ -2,12 +2,10 @@ package app;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import kz.pompei.fui.Fui;
 import kz.pompei.hotconfig.core.ConfigTunnelFile;
-import kz.pompei.scheduler.core.ObjectTaskCollector;
-import kz.pompei.scheduler.core.ScheduledTask;
 import kz.pompei.scheduler.core.Scheduler;
+import kz.pompei.scheduler.core.annotation.FromConf;
 import kz.pompei.scheduler.core.annotation.Schedule;
 
 public class Main {
@@ -18,18 +16,15 @@ public class Main {
     ConfigTunnelFile tunnel  = ConfigTunnelFile.builder().baseDir(appRoot).build();
 
     Object object = new Object() {
-      @Schedule("every 2 sec")
+      @FromConf @Schedule("every 2 sec")
       public void ping() {
         System.out.println("dg2NJ20mnE :: ping");
       }
     };
 
-    ObjectTaskCollector taskCollector = ObjectTaskCollector.builder().tunnel(tunnel).build();
+    Scheduler scheduler = Scheduler.builder().tunnel(tunnel).build();
 
-    List<ScheduledTask> tasks = taskCollector.collect(object);
-
-    Scheduler scheduler = Scheduler.builder().build();
-    scheduler.addAll(tasks);
+    scheduler.collectFromObject(object);
 
     scheduler.startUp();
 

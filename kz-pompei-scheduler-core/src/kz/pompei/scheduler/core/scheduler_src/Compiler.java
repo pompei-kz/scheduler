@@ -1,9 +1,12 @@
 package kz.pompei.scheduler.core.scheduler_src;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import kz.pompei.hotconfig.core.model.ConfParam;
 import kz.pompei.scheduler.core.annotation.Schedule;
 import kz.pompei.scheduler.core.run_checker.DayOfWeek;
@@ -21,8 +24,6 @@ import kz.pompei.scheduler.core.run_checker.RunChecker_YEAR;
 import lombok.NonNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.stream.Collectors.toList;
-
 /**
  * Class for compiling task schedules from configuration.
  */
@@ -38,7 +39,8 @@ public class Compiler {
    */
   public static @NonNull CompileResult compileAll(@NonNull List<ConfParam> params,
                                                   @NonNull TimeZone timeZoneDefault,
-                                                  @NonNull Set<String> taskNameFilter) {
+                                                  @NonNull Set<String> taskNameFilter,
+                                                  @NonNull Consumer<Throwable> errorConsumer) {
     CompileResult result          = new CompileResult();
     TimeZone      currentTimeZone = timeZoneDefault;
 
@@ -55,23 +57,28 @@ public class Compiler {
         continue;
       }
 
+      ScheduleSrc scheduleSrc = ScheduleSrc.NEVER_RUN;
+      String      error       = null;
+
       try {
-        ScheduleSrc scheduleSrc = compile(param.valueStr, currentTimeZone);
-        result.taskName_to_scheduleSrc.put(taskName, scheduleSrc);
-      } catch (RuntimeException e) {
-        //noinspection CallToPrintStackTrace
-        e.printStackTrace();
+        scheduleSrc = compile(param.valueStr, currentTimeZone);
+      } catch (Throwable e) {
 
-        List<String> lines = Arrays.stream(e.getMessage().split("\n")).collect(toList(/*need modifiable list*/));
+        errorConsumer.accept(e);
 
-        String message = "ERR: " + param.name + "=" + param.valueStr + " => " + e.getClass().getSimpleName() + ": " + lines.removeFirst();
+        List<String> errors = new ArrayList<>();
 
-        result.noticeMessages.add(message);
+        Throwable current = e;
 
-        for (String line : lines) {
-          result.noticeMessages.add("  " + line);
+        while (current != null) {
+          errors.add(current.getClass().getSimpleName() + ": " + String.join("\n  ", current.getMessage().split("\n")));
+          current = current.getCause();
         }
+
+        error = String.join("\n", errors);
       }
+
+      result.taskName_to_scheduleSrc.put(taskName, new CompiledScheduleSrc(scheduleSrc, error));
     }
 
     return result;
@@ -112,7 +119,7 @@ public class Compiler {
     private final @NonNull String   source;
     private final @NonNull String   sourceLower;
     private final @NonNull TimeZone timeZone;
-    private int pos;
+    private                int      pos;
 
     Parser(@NonNull String source, @NonNull TimeZone timeZone) {
       this.source      = source;
@@ -124,7 +131,7 @@ public class Compiler {
       RunChecker ret = parseUnion();
       skipSpaces();
       if (!isEnd()) {
-        throw err("Unexpected text");
+        throw err("CydNvK9nlR :: Unexpected text");
       }
       return ret;
     }
@@ -183,7 +190,7 @@ public class Compiler {
       ret = parseMonth();
       if (ret != null) return ret;
 
-      throw err("Expected schedule expression");
+      throw err("uUq6GO2TCc :: Expected schedule expression");
     }
 
     private @Nullable RunChecker parseRepeat() {
@@ -215,7 +222,7 @@ public class Compiler {
 
     private @Nullable RunChecker parseTimeExpression() {
       int start = pos;
-      Hms from = parseHms();
+      Hms from  = parseHms();
       if (from == null) {
         pos = start;
         return null;
@@ -251,16 +258,16 @@ public class Compiler {
         return null;
       }
 
-      int day = parseIntRequired("Expected day of month after `day`");
+      int day = parseIntRequired("YIt9thQ1z5 :: Expected day of month after `day`");
       if (day < 1 || day > 31) {
-        throw err("Day of month must be from 1 to 31");
+        throw err("axDSVArTnG :: Day of month must be from 1 to 31");
       }
       return new RunChecker_DAY_OF_MONTH(day, timeZone);
     }
 
     private @Nullable RunChecker parseYear() {
-      int start = pos;
-      Integer year = parseUnsignedInt();
+      int     start = pos;
+      Integer year  = parseUnsignedInt();
       if (year == null || year < 1000 || year > 9999) {
         pos = start;
         return null;
@@ -294,8 +301,8 @@ public class Compiler {
     }
 
     private @Nullable Hms parseHms() {
-      int start = pos;
-      Integer hour = parseUnsignedInt();
+      int     start = pos;
+      Integer hour  = parseUnsignedInt();
       if (hour == null) {
         pos = start;
         return null;
@@ -310,14 +317,14 @@ public class Compiler {
       }
       int minute = parseFixed2Int("minute");
       if (minute < 0 || minute > 59) {
-        throw err("Minute must be from 00 to 59");
+        throw err("j6WlO9UPp6 :: Minute must be from 00 to 59");
       }
 
       int second = 0;
       if (take(':')) {
         second = parseFixed2Int("second");
         if (second < 0 || second > 59) {
-          throw err("Second must be from 00 to 59");
+          throw err("JS1A6aIh4J :: Second must be from 00 to 59");
         }
       }
 
@@ -327,25 +334,25 @@ public class Compiler {
     private @NonNull Hms parseHmsRequired() {
       Hms ret = parseHms();
       if (ret == null) {
-        throw err("Expected time in hh:MM[:SS] format");
+        throw err("IhzD8dl1hv :: Expected time in hh:MM[:SS] format");
       }
       return ret;
     }
 
     private long parsePeriodMs() {
       skipSpaces();
-      int start = pos;
-      long value = parseLongRequired("Expected period value");
+      int  start = pos;
+      long value = parseLongRequired("FsaAVpeASo :: Expected period value");
       if (value <= 0) {
-        throw errAt(start, "Period value must be positive");
+        throw errAt(start, "pGjkLV1dLw :: Period value must be positive");
       }
 
       skipSpaces();
-      String unit = parseWordRequired("Expected period time unit").toLowerCase();
+      String unit = parseWordRequired("d9rUb0YBCg :: Expected period time unit").toLowerCase();
 
       long multiplier = periodMultiplierMs(unit);
       if (multiplier <= 0) {
-        throw err("Unknown period time unit: " + unit);
+        throw err("44iJ1Nmh5d :: Unknown period time unit: " + unit);
       }
 
       try {
@@ -357,22 +364,22 @@ public class Compiler {
 
     private long periodMultiplierMs(String unit) {
       if (unit.equals("ms") || unit.equals("millis") || unit.equals("millisecond") || unit.equals("milliseconds") || unit.equals("мс") ||
-          unit.startsWith("миллисекунд")) {
+        unit.startsWith("миллисекунд")) {
         return 1;
       }
       if (unit.equals("s") || unit.equals("sec") || unit.equals("second") || unit.equals("seconds") || unit.equals("с") || unit.equals("сек") ||
-          unit.startsWith("секунд")) {
+        unit.startsWith("секунд")) {
         return 1_000L;
       }
       if (unit.equals("m") || unit.equals("min") || unit.equals("minute") || unit.equals("minutes") || unit.equals("м") ||
-          unit.startsWith("минут")) {
+        unit.startsWith("минут")) {
         return 60_000L;
       }
       if (unit.equals("h") || unit.equals("hour") || unit.equals("hours") || unit.equals("ч") || unit.startsWith("час")) {
         return 3_600_000L;
       }
       if (unit.equals("d") || unit.equals("day") || unit.equals("days") || unit.equals("д") || unit.equals("дн") || unit.equals("дня") ||
-          unit.startsWith("день") || unit.startsWith("дней")) {
+        unit.startsWith("день") || unit.startsWith("дней")) {
         return 86_400_000L;
       }
       if (unit.equals("month") || unit.equals("months") || unit.equals("мес") || unit.startsWith("месяц")) {
@@ -386,8 +393,9 @@ public class Compiler {
 
     private boolean takeRussianEvery() {
       skipSpaces();
-      int start = pos;
-      String word = parseWord();
+      int    start = pos;
+      String word  = parseWord();
+      //noinspection SpellCheckingInspection
       if (word != null && word.toLowerCase().startsWith("кажд")) {
         return true;
       }
@@ -432,6 +440,7 @@ public class Compiler {
       return source.substring(start, pos);
     }
 
+    @SuppressWarnings("SameParameterValue")
     private @NonNull String parseWordRequired(String message) {
       String ret = parseWord();
       if (ret == null) {
@@ -443,7 +452,7 @@ public class Compiler {
     private @Nullable Integer parseUnsignedInt() {
       skipSpaces();
       int start = pos;
-      int ret = 0;
+      int ret   = 0;
       while (!isEnd() && Character.isDigit(source.charAt(pos))) {
         ret = ret * 10 + source.charAt(pos) - '0';
         pos++;
@@ -454,6 +463,7 @@ public class Compiler {
       return ret;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private int parseIntRequired(String message) {
       Integer ret = parseUnsignedInt();
       if (ret == null) {
@@ -462,10 +472,11 @@ public class Compiler {
       return ret;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private long parseLongRequired(String message) {
       skipSpaces();
-      int start = pos;
-      long ret = 0;
+      int  start = pos;
+      long ret   = 0;
       while (!isEnd() && Character.isDigit(source.charAt(pos))) {
         ret = ret * 10 + source.charAt(pos) - '0';
         pos++;
@@ -478,7 +489,7 @@ public class Compiler {
 
     private int parseFixed2Int(String name) {
       if (pos + 2 > source.length() || !Character.isDigit(source.charAt(pos)) || !Character.isDigit(source.charAt(pos + 1))) {
-        throw err("Expected two digits for " + name);
+        throw err("uWiC2NPbvA :: Expected two digits for " + name);
       }
       int ret = (source.charAt(pos) - '0') * 10 + source.charAt(pos + 1) - '0';
       pos += 2;
@@ -494,9 +505,10 @@ public class Compiler {
       return false;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void expect(char c) {
       if (!take(c)) {
-        throw err("Expected `" + c + "`");
+        throw err("dfS8E6hWRE :: Expected `" + c + "`");
       }
     }
 
@@ -506,6 +518,7 @@ public class Compiler {
       }
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean isEnd() {
       return pos >= source.length();
     }
@@ -537,37 +550,37 @@ public class Compiler {
   }
 
   private static final DayWord[] DAY_WORDS = {
-    new DayWord("sunday", DayOfWeek.SUNDAY),
+    new DayWord("Sunday".toLowerCase(), DayOfWeek.SUNDAY),
     new DayWord("sun", DayOfWeek.SUNDAY),
     new DayWord("воскресенье", DayOfWeek.SUNDAY),
     new DayWord("вос", DayOfWeek.SUNDAY),
     new DayWord("вс", DayOfWeek.SUNDAY),
-    new DayWord("monday", DayOfWeek.MONDAY),
+    new DayWord("Monday".toLowerCase(), DayOfWeek.MONDAY),
     new DayWord("mon", DayOfWeek.MONDAY),
     new DayWord("понедельник", DayOfWeek.MONDAY),
     new DayWord("пон", DayOfWeek.MONDAY),
     new DayWord("пн", DayOfWeek.MONDAY),
-    new DayWord("tuesday", DayOfWeek.TUESDAY),
+    new DayWord("Tuesday".toLowerCase(), DayOfWeek.TUESDAY),
     new DayWord("tue", DayOfWeek.TUESDAY),
     new DayWord("вторник", DayOfWeek.TUESDAY),
     new DayWord("вто", DayOfWeek.TUESDAY),
     new DayWord("вт", DayOfWeek.TUESDAY),
-    new DayWord("wednesday", DayOfWeek.WEDNESDAY),
+    new DayWord("Wednesday".toLowerCase(), DayOfWeek.WEDNESDAY),
     new DayWord("wed", DayOfWeek.WEDNESDAY),
     new DayWord("среда", DayOfWeek.WEDNESDAY),
     new DayWord("сре", DayOfWeek.WEDNESDAY),
     new DayWord("ср", DayOfWeek.WEDNESDAY),
-    new DayWord("thursday", DayOfWeek.THURSDAY),
+    new DayWord("Thursday".toLowerCase(), DayOfWeek.THURSDAY),
     new DayWord("thu", DayOfWeek.THURSDAY),
     new DayWord("четверг", DayOfWeek.THURSDAY),
     new DayWord("чет", DayOfWeek.THURSDAY),
     new DayWord("чт", DayOfWeek.THURSDAY),
-    new DayWord("friday", DayOfWeek.FRIDAY),
+    new DayWord("Friday".toLowerCase(), DayOfWeek.FRIDAY),
     new DayWord("fri", DayOfWeek.FRIDAY),
     new DayWord("пятница", DayOfWeek.FRIDAY),
     new DayWord("пят", DayOfWeek.FRIDAY),
     new DayWord("пт", DayOfWeek.FRIDAY),
-    new DayWord("saturday", DayOfWeek.SATURDAY),
+    new DayWord("Saturday".toLowerCase(), DayOfWeek.SATURDAY),
     new DayWord("sat", DayOfWeek.SATURDAY),
     new DayWord("суббота", DayOfWeek.SATURDAY),
     new DayWord("суб", DayOfWeek.SATURDAY),
@@ -575,11 +588,11 @@ public class Compiler {
   };
 
   private static final MonthWord[] MONTH_WORDS = {
-    new MonthWord("january", 1),
+    new MonthWord("January".toLowerCase(), 1),
     new MonthWord("jan", 1),
     new MonthWord("январь", 1),
     new MonthWord("янв", 1),
-    new MonthWord("february", 2),
+    new MonthWord("February".toLowerCase(), 2),
     new MonthWord("feb", 2),
     new MonthWord("февраль", 2),
     new MonthWord("фев", 2),
@@ -587,17 +600,17 @@ public class Compiler {
     new MonthWord("mar", 3),
     new MonthWord("март", 3),
     new MonthWord("мар", 3),
-    new MonthWord("april", 4),
+    new MonthWord("April".toLowerCase(), 4),
     new MonthWord("apr", 4),
     new MonthWord("апрель", 4),
     new MonthWord("апр", 4),
     new MonthWord("may", 5),
     new MonthWord("май", 5),
-    new MonthWord("june", 6),
+    new MonthWord("June".toLowerCase(), 6),
     new MonthWord("jun", 6),
     new MonthWord("июнь", 6),
     new MonthWord("июн", 6),
-    new MonthWord("july", 7),
+    new MonthWord("July".toLowerCase(), 7),
     new MonthWord("jul", 7),
     new MonthWord("июль", 7),
     new MonthWord("июл", 7),
@@ -605,19 +618,19 @@ public class Compiler {
     new MonthWord("aug", 8),
     new MonthWord("август", 8),
     new MonthWord("авг", 8),
-    new MonthWord("september", 9),
+    new MonthWord("September".toLowerCase(), 9),
     new MonthWord("sep", 9),
     new MonthWord("сентябрь", 9),
     new MonthWord("сен", 9),
-    new MonthWord("october", 10),
+    new MonthWord("October".toLowerCase(), 10),
     new MonthWord("oct", 10),
     new MonthWord("октябрь", 10),
     new MonthWord("окт", 10),
-    new MonthWord("november", 11),
+    new MonthWord("November".toLowerCase(), 11),
     new MonthWord("nov", 11),
     new MonthWord("ноябрь", 11),
     new MonthWord("ноя", 11),
-    new MonthWord("december", 12),
+    new MonthWord("December".toLowerCase(), 12),
     new MonthWord("dec", 12),
     new MonthWord("декабрь", 12),
     new MonthWord("дек", 12)

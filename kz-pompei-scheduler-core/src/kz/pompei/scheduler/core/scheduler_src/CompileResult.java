@@ -11,11 +11,9 @@ import java.util.Map;
 public class CompileResult {
 
   /**
-   * The main compilation result. For each task, there is a schedule for running that task.
-   * If there are errors in the configuration parameter, this map will not contain a schedule,
-   * but {@link #noticeMessages} will contain an error message.
+   * TODO add Javadoc here
    */
-  public final Map<String, ScheduleSrc> taskName_to_scheduleSrc = new HashMap<>();
+  public final Map<String, CompiledScheduleSrc> taskName_to_scheduleSrc = new HashMap<>();
 
   /**
    * List of compilation error messages. The task this message belongs to will be stated in the message itself.
