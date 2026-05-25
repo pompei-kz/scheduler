@@ -314,6 +314,33 @@ public class CompilerTest extends TestParent {
   }
 
   @DataProvider
+  public Object[][] combinedPrefixScheduleExpressions() {
+    return new Object[][]{
+      {"Exe(custom-executor) parallel 13:00"},
+      {"parallel Exe(custom-executor) 13:00"},
+      {"  параллельно ExE(  custom-executor  ) 13:00  "}
+    };
+  }
+
+  @Test(dataProvider = "combinedPrefixScheduleExpressions")
+  public void compile_shouldUseExecutorAndParallelPrefixesInAnyOrder(String expression) {
+    ScheduleSrc schedule = Compiler.compile(expression, UTC, currentExecutorName);
+    long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from     = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
+    long        to       = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(schedule.executorName()).isEqualTo("custom-executor");
+    assertThat(schedule.isParallel()).isTrue();
+    assertThat(needRun).isTrue();
+  }
+
+  @SuppressWarnings("SpellCheckingInspection") @DataProvider
   public Object[][] parallelScheduleExpressions() {
     return new Object[][]{
       {"parallel 13:00"},

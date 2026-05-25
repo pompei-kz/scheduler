@@ -42,9 +42,11 @@ import java.lang.annotation.Target;
  * <p>
  * {@code parallel 13:00}
  * <p>
- * Prefixes can be combined in this order:
+ * Prefixes can be combined in any order:
  * <p>
  * {@code Exe(background-pool) parallel 13:00}
+ * <p>
+ * {@code parallel Exe(background-pool) 13:00}
  *
  * <h2>Temporal Sets</h2>
  * A schedule expression produces a temporal set.

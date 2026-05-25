@@ -101,25 +101,31 @@ public class Compiler {
       return ScheduleSrc.NEVER_RUN;
     }
 
-    String executorName0 = executorName;
+    boolean isParallel = false;
+    String  executorName0 = executorName;
 
-    if (startsWithExecutorPrefix(source)) {
-      int executorNameEnd = source.indexOf(')', "Exe(".length());
-      if (executorNameEnd < 0) {
-        throw new SchedulerCompileErr("u2GfTcAY1T :: Expected `)` after executor name");
+    while (true) {
+      if (startsWithExecutorPrefix(source)) {
+        int executorNameEnd = source.indexOf(')', "Exe(".length());
+        if (executorNameEnd < 0) {
+          throw new SchedulerCompileErr("u2GfTcAY1T :: Expected `)` after executor name");
+        }
+
+        executorName0 = source.substring("Exe(".length(), executorNameEnd).trim();
+        source        = source.substring(executorNameEnd + 1).trim();
+        continue;
       }
 
-      executorName0 = source.substring("Exe(".length(), executorNameEnd).trim();
-      source        = source.substring(executorNameEnd + 1).trim();
-    }
+      String firstWord = firstWord(source).toLowerCase();
 
-    boolean isParallel = false;
-    String  firstWord  = firstWord(source).toLowerCase();
+      //noinspection SpellCheckingInspection
+      if (firstWord.startsWith("paral") || firstWord.startsWith("парал")) {
+        isParallel = true;
+        source     = source.substring(firstWord.length()).trim();
+        continue;
+      }
 
-    //noinspection SpellCheckingInspection
-    if (firstWord.startsWith("paral") || firstWord.startsWith("парал")) {
-      isParallel = true;
-      source     = source.substring(firstWord.length()).trim();
+      break;
     }
 
     RunChecker runChecker   = new SchedulerTxtParser(source, timeZone).parse();
