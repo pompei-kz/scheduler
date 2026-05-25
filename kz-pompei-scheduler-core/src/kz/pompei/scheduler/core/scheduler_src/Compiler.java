@@ -101,6 +101,18 @@ public class Compiler {
       return ScheduleSrc.NEVER_RUN;
     }
 
+    String executorName0 = executorName;
+
+    if (startsWithExecutorPrefix(source)) {
+      int executorNameEnd = source.indexOf(')', "Exe(".length());
+      if (executorNameEnd < 0) {
+        throw new SchedulerCompileErr("u2GfTcAY1T :: Expected `)` after executor name");
+      }
+
+      executorName0 = source.substring("Exe(".length(), executorNameEnd).trim();
+      source        = source.substring(executorNameEnd + 1).trim();
+    }
+
     boolean isParallel = false;
     String  firstWord  = firstWord(source).toLowerCase();
 
@@ -110,8 +122,9 @@ public class Compiler {
       source     = source.substring(firstWord.length()).trim();
     }
 
-    RunChecker runChecker  = new SchedulerTxtParser(source, timeZone).parse();
-    boolean    isParallel0 = isParallel;
+    RunChecker runChecker   = new SchedulerTxtParser(source, timeZone).parse();
+    boolean    isParallel0  = isParallel;
+    String     executorName1 = executorName0;
 
     return new ScheduleSrc() {
       @Override public boolean needRun(long timestampStartedAt, long timestampFrom, long timestampTo) {
@@ -119,13 +132,17 @@ public class Compiler {
       }
 
       @Override public @Nullable String executorName() {
-        return executorName;
+        return executorName1;
       }
 
       @Override public boolean isParallel() {
         return isParallel0;
       }
     };
+  }
+
+  private static boolean startsWithExecutorPrefix(@NonNull String source) {
+    return source.length() >= "Exe(".length() && source.regionMatches(true, 0, "Exe(", 0, "Exe(".length());
   }
 
   private static @NonNull String firstWord(@NonNull String source) {

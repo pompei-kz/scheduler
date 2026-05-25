@@ -274,6 +274,46 @@ public class CompilerTest extends TestParent {
   }
 
   @DataProvider
+  public Object[][] executorScheduleExpressions() {
+    return new Object[][]{
+      {"Exe(custom-executor) 13:00", "custom-executor"},
+      {"exe(custom-executor) 13:00", "custom-executor"},
+      {"EXE(custom-executor) 13:00", "custom-executor"},
+      {"  ExE(  custom-executor  ) 13:00  ", "custom-executor"}
+    };
+  }
+
+  @Test(dataProvider = "executorScheduleExpressions")
+  public void compile_shouldUseExecutorNameFromExePrefix(String expression, String expectedExecutorName) {
+    ScheduleSrc schedule = Compiler.compile(expression, UTC, currentExecutorName);
+    long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from     = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
+    long        to       = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(schedule.executorName()).isEqualTo(expectedExecutorName);
+    assertThat(needRun).isTrue();
+  }
+
+  @Test
+  public void compile_shouldUsePassedExecutorNameWhenExePrefixIsAbsent() {
+    ScheduleSrc schedule = Compiler.compile("13:00", UTC, currentExecutorName);
+
+    assertThat(schedule.executorName()).isEqualTo(currentExecutorName);
+  }
+
+  @Test
+  public void compile_shouldThrowSchedulerCompileErrWhenExePrefixHasNoClosingParenthesis() {
+    assertThatThrownBy(() -> Compiler.compile("Exe(custom-executor 13:00", UTC, currentExecutorName)).isInstanceOf(SchedulerCompileErr.class)
+                                                                                                      .hasMessageContaining("Expected `)` after executor name");
+  }
+
+  @DataProvider
   public Object[][] parallelScheduleExpressions() {
     return new Object[][]{
       {"parallel 13:00"},
