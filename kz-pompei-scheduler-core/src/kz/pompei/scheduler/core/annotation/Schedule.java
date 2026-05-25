@@ -48,6 +48,37 @@ import java.lang.annotation.Target;
  * <p>
  * {@code parallel Exe(background-pool) 13:00}
  *
+ * <h2>Configuration Control Rows</h2>
+ * When schedules are loaded from configuration for methods annotated with
+ * {@link FromConf}, parameter names that start with {@code /} are treated as
+ * control rows, not as task names.
+ * <p>
+ * Supported control rows:
+ * <ul>
+ *   <li>
+ *     {@code /TZ} - changes the timezone for the following task schedule rows.
+ *     The parameter value is passed to {@code TimeZone.getTimeZone(...)} after trimming.
+ *   <li>
+ *     {@code /EXECUTOR} - changes the default executor name for the following
+ *     task schedule rows. The parameter value is trimmed.
+ * </ul>
+ * <p>
+ * Control rows are applied in configuration order. A task row uses the latest
+ * preceding {@code /TZ} and {@code /EXECUTOR} values. The schedule text prefix
+ * {@code Exe(executorName)} overrides the current {@code /EXECUTOR} value for
+ * that task only.
+ * <p>
+ * For example:
+ * <pre>
+ * /TZ       = Asia/Almaty
+ * /EXECUTOR = background-pool
+ * taskA     = 13:00
+ * taskB     = Exe(io-pool) 14:00
+ * </pre>
+ * In this example, {@code taskA} uses timezone {@code Asia/Almaty} and executor
+ * {@code background-pool}; {@code taskB} uses the same timezone and executor
+ * {@code io-pool}.
+ *
  * <h2>Temporal Sets</h2>
  * A schedule expression produces a temporal set.
  * <p>
