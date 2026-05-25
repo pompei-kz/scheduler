@@ -38,12 +38,12 @@ public class Compiler {
 
       String taskName = trimStr(param.name);
 
-      if ("/TZ".equals(taskName)) {
+      if ("/TZ".equalsIgnoreCase(taskName)) {
         currentTimeZone = TimeZone.getTimeZone(trimStr(param.valueStr));
         continue;
       }
 
-      if ("/EXECUTOR".equals(taskName)) {
+      if ("/EXECUTOR".equalsIgnoreCase(taskName)) {
         currentExecutorName = trimStr(param.valueStr);
         continue;
       }

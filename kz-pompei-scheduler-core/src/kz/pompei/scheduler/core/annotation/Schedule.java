@@ -57,10 +57,12 @@ import java.lang.annotation.Target;
  * <ul>
  *   <li>
  *     {@code /TZ} - changes the timezone for the following task schedule rows.
- *     The parameter value is passed to {@code TimeZone.getTimeZone(...)} after trimming.
+ *     The control-row name is case-insensitive. The parameter value is passed
+ *     to {@code TimeZone.getTimeZone(...)} after trimming.
  *   <li>
  *     {@code /EXECUTOR} - changes the default executor name for the following
- *     task schedule rows. The parameter value is trimmed.
+ *     task schedule rows. The control-row name is case-insensitive.
+ *     The parameter value is trimmed.
  * </ul>
  * <p>
  * Control rows are applied in configuration order. A task row uses the latest

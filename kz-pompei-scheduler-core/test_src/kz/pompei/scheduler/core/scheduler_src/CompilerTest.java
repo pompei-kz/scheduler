@@ -1,5 +1,9 @@
 package kz.pompei.scheduler.core.scheduler_src;
 
+import java.util.List;
+import java.util.Set;
+import java.util.TimeZone;
+import kz.pompei.hotconfig.core.model.ConfParam;
 import kz.pompei.scheduler.core.TestParent;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -373,5 +377,49 @@ public class CompilerTest extends TestParent {
     ScheduleSrc schedule = Compiler.compile("13:00", UTC, currentExecutorName);
 
     assertThat(schedule.isParallel()).isFalse();
+  }
+
+  @Test
+  public void compileAll_shouldUseExecutorControlRowCaseInsensitively() {
+    CompileResult result = Compiler.compileAll(
+      List.of(
+        new ConfParam("/executor", "custom-executor"),
+        new ConfParam("taskA", "13:00")
+      ),
+      UTC,
+      Set.of("taskA"),
+      e -> {}
+    );
+
+    ScheduleSrc schedule = result.taskName_to_scheduleSrc.get("taskA").src;
+
+    assertThat(schedule.executorName()).isEqualTo("custom-executor");
+  }
+
+  @Test
+  public void compileAll_shouldUseTimeZoneControlRowCaseInsensitively() {
+    TimeZone      asiaAlmaty = TimeZone.getTimeZone("Asia/Almaty");
+    CompileResult result     = Compiler.compileAll(
+      List.of(
+        new ConfParam("/tz", "Asia/Almaty"),
+        new ConfParam("taskA", "13:00")
+      ),
+      UTC,
+      Set.of("taskA"),
+      e -> {}
+    );
+
+    ScheduleSrc schedule = result.taskName_to_scheduleSrc.get("taskA").src;
+    long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from     = timestamp(asiaAlmaty, 2026, 5, 25, 13, 0, 0, 0);
+    long        to       = timestamp(asiaAlmaty, 2026, 5, 25, 13, 0, 1, 0);
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(needRun).isTrue();
   }
 }
