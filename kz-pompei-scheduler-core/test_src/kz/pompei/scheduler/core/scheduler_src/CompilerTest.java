@@ -235,4 +235,74 @@ public class CompilerTest extends TestParent {
     assertThatThrownBy(() -> Compiler.compile("unknown", UTC)).isInstanceOf(SchedulerCompileErr.class)
                                                               .hasMessageContaining("Expected schedule expression");
   }
+
+  @Test
+  public void compile_shouldReturnNeverRunWhenTrimmedExpressionStartsWithHash() {
+    ScheduleSrc schedule = Compiler.compile("  # 13:00", UTC);
+
+    //
+    //
+    boolean needRun = schedule.needRun(
+      timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0),
+      timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0),
+      timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0)
+    );
+    //
+    //
+
+    assertThat(schedule).isSameAs(ScheduleSrc.NEVER_RUN);
+    assertThat(needRun).isFalse();
+    assertThat(schedule.isParallel()).isFalse();
+  }
+
+  @Test
+  public void compile_shouldTrimExpressionBeforeParsing() {
+    ScheduleSrc schedule = Compiler.compile("  13:00  ", UTC);
+    long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from     = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
+    long        to       = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(needRun).isTrue();
+  }
+
+  @DataProvider
+  public Object[][] parallelScheduleExpressions() {
+    return new Object[][]{
+      {"parallel 13:00"},
+      {"paral 13:00"},
+      {"  parallel 13:00  "},
+      {"Параллельно 13:00"},
+      {"парал 13:00"}
+    };
+  }
+
+  @Test(dataProvider = "parallelScheduleExpressions")
+  public void compile_shouldMarkScheduleAsParallelWhenTrimmedExpressionStartsWithParallelWord(String expression) {
+    ScheduleSrc schedule = Compiler.compile(expression, UTC);
+    long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
+    long        from     = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
+    long        to       = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
+
+    //
+    //
+    boolean needRun = schedule.needRun(started, from, to);
+    //
+    //
+
+    assertThat(schedule.isParallel()).isTrue();
+    assertThat(needRun).isTrue();
+  }
+
+  @Test
+  public void compile_shouldNotMarkScheduleAsParallelWithoutParallelPrefix() {
+    ScheduleSrc schedule = Compiler.compile("13:00", UTC);
+
+    assertThat(schedule.isParallel()).isFalse();
+  }
 }

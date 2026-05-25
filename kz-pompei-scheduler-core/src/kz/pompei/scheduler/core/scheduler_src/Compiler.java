@@ -3,6 +3,7 @@ package kz.pompei.scheduler.core.scheduler_src;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.Consumer;
@@ -97,7 +98,22 @@ public class Compiler {
       throw new SchedulerCompileErr("Schedule expression is null");
     }
 
-    RunChecker runChecker = new Parser(schedulerTxt, timeZone).parse();
+    String source = schedulerTxt.trim();
+
+    if (source.startsWith("#")) {
+      return ScheduleSrc.NEVER_RUN;
+    }
+
+    boolean isParallel = false;
+
+    String firstWord = firstWord(source).toLowerCase(Locale.ROOT);
+    if (firstWord.startsWith("paral") || firstWord.startsWith("парал")) {
+      isParallel = true;
+      source     = source.substring(firstWord.length()).trim();
+    }
+
+    RunChecker runChecker  = new Parser(source, timeZone).parse();
+    boolean    isParallel0 = isParallel;
 
     return new ScheduleSrc() {
       @Override public boolean needRun(long timestampStartedAt, long timestampFrom, long timestampTo) {
@@ -109,9 +125,18 @@ public class Compiler {
       }
 
       @Override public boolean isParallel() {
-        return false;
+        return isParallel0;
       }
     };
+  }
+
+  private static @NonNull String firstWord(@NonNull String source) {
+    for (int i = 0; i < source.length(); i++) {
+      if (Character.isWhitespace(source.charAt(i))) {
+        return source.substring(0, i);
+      }
+    }
+    return source;
   }
 
   private static class Parser {
