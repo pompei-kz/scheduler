@@ -109,18 +109,28 @@ public class Collector {
       classConfDoc -> Collections.addAll(confDefault.confComments, classConfDoc.ann.value().split("\n")));
 
     @NonNull String folder    = findAnnotation(object.getClass(), ConfFolder.class).map(s -> s + "/").orElse("");
-    @NonNull String localPath = folder + object.getClass().getSimpleName() + def.configExtension;
+    @NonNull String localPath = folder + SchedulerUtil.extractClassName(object.getClass()) + def.configExtension;
 
     AtomicLong lastModificationMarker = new AtomicLong(0L);
 
     Runnable update = () -> {
-      Conf conf               = def.tunnel.read(localPath);
-      Long modificationMarker = def.tunnel.modificationMarker(localPath);
+      Conf          conf               = def.tunnel.read(localPath);
+      Long          modificationMarker = def.tunnel.modificationMarker(localPath);
+      CompileResult compileResult;
 
       if (conf == null || modificationMarker == null) {
+
+        conf = confDefault.copy();
+
+        compileResult = Compiler.compileAll(confDefault.params, def.getTimezone(), taskName_to_task.keySet(), def.taskErrorConsumer);
+
+        compileResult.assignTo(conf);
+
         def.tunnel.write(localPath, confDefault);
-        modificationMarker = def.tunnel.modificationMarker(localPath);
-        conf               = confDefault;
+        Long mm = def.tunnel.modificationMarker(localPath);
+        lastModificationMarker.set(mm == null ? 0 : mm);
+
+
       } else {
 
         Conf    confNew = conf.copy();
@@ -143,44 +153,35 @@ public class Collector {
           }
         }
 
-        if (changed) {
+        compileResult = Compiler.compileAll(conf.params, def.getTimezone(), taskName_to_task.keySet(), def.taskErrorConsumer);
+        compileResult.assignTo(confNew);
+
+        if (changed || !confNew.equals(conf)) {
           def.tunnel.write(localPath, confNew);
           modificationMarker = def.tunnel.modificationMarker(localPath);
           conf               = confNew;
         }
+        if (modificationMarker != null) {
+          lastModificationMarker.set(modificationMarker);
+        }
       }
-      if (modificationMarker != null) {
-        lastModificationMarker.set(modificationMarker);
-      }
-
-      //
-      //
-      CompileResult compileResult = Compiler.compileAll(conf.params, def.getTimezone(), taskName_to_task.keySet(), def.taskErrorConsumer);
-      //
-      //
-
-      def.tunnel.writeNoticeLines(localPath, compileResult.noticeMessages);
 
       for (ConfParam param : conf.params) {
         String taskName = param.name;
         Task   task     = taskName_to_task.get(taskName);
         if (task == null) continue;
 
-        ScheduleSrc scheduleSrc = Optional.of(compileResult)
-                                          .map(x -> x.taskName_to_scheduleSrc.get(taskName))
-                                          .map(x -> x.src)
-                                          .orElse(ScheduleSrc.NEVER_RUN);
-
-        taskName_to_src.put(taskName, scheduleSrc);
+        Optional.of(compileResult)
+                .map(x -> x.taskName_to_scheduleSrc.get(taskName))
+                .map(x -> x.src)
+                .ifPresentOrElse(src -> taskName_to_src.put(taskName, src),
+                                 () -> taskName_to_src.remove(taskName));
       }
     };
 
     refreshHandlers.add(() -> {
-
       Long modificationMarker = def.tunnel.modificationMarker(localPath);
-      if (modificationMarker == null) return;
-      if (lastModificationMarker.longValue() == modificationMarker) return;
-
+      if (modificationMarker != null && modificationMarker == lastModificationMarker.longValue()) return;
       update.run();
     });
 
@@ -190,19 +191,18 @@ public class Collector {
   }
 
   private static @NonNull Task createTask(@NonNull Object object, @NonNull Method method) {
+    method.setAccessible(true);
     return new Task() {
       @Override public String taskName() {
-        return object.getClass().getSimpleName() + "." + method.getName();
+        return SchedulerUtil.extractClassName(object.getClass()) + '.' + method.getName();
       }
 
       @Override public void run() throws Throwable {
-
         try {
           method.invoke(object);
         } catch (InvocationTargetException e) {
           throw e.getTargetException();
         }
-
       }
     };
   }

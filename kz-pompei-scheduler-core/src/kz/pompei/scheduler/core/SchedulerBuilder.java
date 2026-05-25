@@ -23,7 +23,8 @@ public class SchedulerBuilder {
   private @NonNull  Supplier<ExecutorService>              executorDefaultSupplier  = () -> Executors.newFixedThreadPool(3);
   private final     Map<String, Supplier<ExecutorService>> executorSupplierMap      = new HashMap<>();
   private @NonNull  String                                 configExtension          = ".scheduler";
-  private           long                                   runTaskThreadLoopSleepMs = 1300;
+  private           long                                   runTaskThreadLoopSleepMs = 350;
+  private           long                                   refreshConfigMs          = 1700;
   private @NonNull  ConfigTunnel                           tunnel                   = new ConfigTunnelMem();
 
   SchedulerBuilder() {
@@ -39,6 +40,17 @@ public class SchedulerBuilder {
    */
   public @NonNull SchedulerBuilder schedulerName(@NonNull String schedulerName) {
     this.schedulerName = schedulerName;
+    return this;
+  }
+
+  /**
+   * TODO add Javadoc
+   *
+   * @param refreshConfigMs
+   * @return
+   */
+  public @NonNull SchedulerBuilder setRefreshConfigMs(long refreshConfigMs) {
+    this.refreshConfigMs = refreshConfigMs;
     return this;
   }
 
@@ -148,7 +160,7 @@ public class SchedulerBuilder {
   public @NonNull Scheduler build() {
 
     Scheduler.Def def = new Scheduler.Def(
-      schedulerName, timeZoneDefault, runTaskThreadLoopSleepMs, executorDefaultSupplier,
+      schedulerName, timeZoneDefault, runTaskThreadLoopSleepMs, refreshConfigMs, executorDefaultSupplier,
       executorSupplierMap, taskErrorConsumer, configExtension, tunnel
     );
 

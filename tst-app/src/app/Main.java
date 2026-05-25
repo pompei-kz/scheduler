@@ -2,6 +2,7 @@ package app;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import kz.pompei.fui.Fui;
 import kz.pompei.hotconfig.core.ConfigTunnelFile;
 import kz.pompei.scheduler.core.Scheduler;
@@ -18,7 +19,7 @@ public class Main {
     Object object = new Object() {
       @FromConf @Schedule("every 2 sec")
       public void ping() {
-        System.out.println("dg2NJ20mnE :: ping");
+        System.out.println("dg2NJ20mnE :: ping "+ Instant.now());
       }
     };
 

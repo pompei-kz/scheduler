@@ -19,14 +19,16 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static kz.pompei.scheduler.core.SchedulerUtil.extractClassName;
+
 public class Scheduler {
   private final @NonNull Def           def;
   private final @NonNull Collector     collector;
   private final @NonNull AtomicBoolean working = new AtomicBoolean(true);
 
-  private final ConcurrentHashMap<Integer, ScheduledTask> taskId_to_task = new ConcurrentHashMap<>();
-
-  private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, Thread>> taskId_runId_to_thread = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Integer, ScheduledTask>                   taskId_to_task          = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, Thread>> taskId_runId_to_thread  = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, ExecutorService>                  name_to_executorService = new ConcurrentHashMap<>();
 
   private final AtomicInteger taskIdSource = new AtomicInteger(1);
   private final AtomicLong    runIdSource  = new AtomicLong(1L);
@@ -46,6 +48,7 @@ public class Scheduler {
     final @NonNull  String                                 schedulerName;
     final @Nullable TimeZone                               timeZoneDefault;
     final           long                                   runTaskThreadLoopSleepMs;
+    final           long                                   refreshConfigMs;
     final @NonNull  Supplier<ExecutorService>              executorDefaultSupplier;
     final @NonNull  Map<String, Supplier<ExecutorService>> executorSupplierMap;
     final @NonNull  Consumer<Throwable>                    taskErrorConsumer;
@@ -74,19 +77,7 @@ public class Scheduler {
 
       while (working.get()) {
 
-        {
-          long sleepMs = def.runTaskThreadLoopSleepMs;
-          if (sleepMs <= 0) {
-            Thread.yield();
-          } else {
-            try {
-              //noinspection BusyWait
-              Thread.sleep(sleepMs);
-            } catch (InterruptedException e) {
-              throw new RuntimeException("KE1Vt9Dyw2 :: Interrupted from scheduler run thread from sleep", e);
-            }
-          }
-        }
+        sleep(def.runTaskThreadLoopSleepMs);
 
         long newTimestamp = System.currentTimeMillis();
 
@@ -110,12 +101,40 @@ public class Scheduler {
         runTasks(taskIdsToRun);
 
         taskIdsToRun.clear();
-
-        collector.refresh();
       }
     });
 
+    Thread refreshConfigs = new Thread(() -> {
+      while (working.get()) {
+        collector.refresh();
+        sleep(def.refreshConfigMs);
+      }
+    });
+
+    runThread.setName(def.schedulerName + "-RunThreads");
+    refreshConfigs.setName(def.schedulerName + "-RefreshConfigs");
+
+    int  taskId = taskIdSource.getAndIncrement();
+    long run1   = runIdSource.getAndIncrement();
+    long run2   = runIdSource.getAndIncrement();
+
+    taskId_runId_to_thread.computeIfAbsent(taskId, k -> new ConcurrentHashMap<>()).put(run1, runThread);
+    taskId_runId_to_thread.computeIfAbsent(taskId, k -> new ConcurrentHashMap<>()).put(run2, refreshConfigs);
+
     runThread.start();
+    refreshConfigs.start();
+  }
+
+  private static void sleep(long delayMs) {
+    if (delayMs <= 0) {
+      Thread.yield();
+    } else {
+      try {
+        Thread.sleep(delayMs);
+      } catch (InterruptedException e) {
+        throw new RuntimeException("KE1Vt9Dyw2 :: Interrupted from scheduler run thread from sleep", e);
+      }
+    }
   }
 
   private int runCount(int taskId) {
@@ -125,6 +144,10 @@ public class Scheduler {
 
   public void shutDownAndJoinAllRunningTaskFinished() {
     working.set(false);
+
+    for (ExecutorService service : name_to_executorService.values()) {
+      service.shutdown();
+    }
 
     while (true) {
       List<Thread> allRunningThreads = taskId_runId_to_thread.values().stream().flatMap(x -> x.values().stream()).toList();
@@ -150,10 +173,9 @@ public class Scheduler {
     return str == null ? "" : str;
   }
 
-  private final ConcurrentHashMap<String, ExecutorService> name_to_executorService = new ConcurrentHashMap<>();
-
   private @NonNull ExecutorService getExecutorService(@Nullable String executorName) {
-    return name_to_executorService.computeIfAbsent(executorName, this::createExecutorByName);
+    String exeName = executorName != null ? executorName : "";
+    return name_to_executorService.computeIfAbsent(exeName, this::createExecutorByName);
   }
 
   private @NotNull ExecutorService createExecutorByName(@Nullable String executorName) {
@@ -192,7 +214,7 @@ public class Scheduler {
       long   runId  = runIdSource.getAndIncrement();
       Thread thread = Thread.currentThread();
       runId_to_thread.put(runId, thread);
-      thread.setName(def.schedulerName + "/" + task.taskName() + " #" + runId);
+      thread.setName(extractClassName(executorService.getClass()) + " => " + def.schedulerName + "/" + task.taskName() + " #" + runId);
 
       try {
 
