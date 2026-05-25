@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class CompilerTest extends TestParent {
 
+  private static final String currentExecutorName = "test-executor";
+
   @SuppressWarnings("SpellCheckingInspection")
   @DataProvider
   public Object[][] scheduleExpressionsFromJavadoc() {
@@ -136,7 +138,7 @@ public class CompilerTest extends TestParent {
                                                                         long startedAt,
                                                                         long from,
                                                                         long to) {
-    ScheduleSrc schedule = Compiler.compile(expression, UTC);
+    ScheduleSrc schedule = Compiler.compile(expression, UTC, currentExecutorName);
 
     //
     //
@@ -149,7 +151,7 @@ public class CompilerTest extends TestParent {
 
   @Test
   public void compile_shouldParseTimeAndDayOfWeekIntersection() {
-    ScheduleSrc schedule = Compiler.compile("13:00 * Monday", UTC);
+    ScheduleSrc schedule = Compiler.compile("13:00 * Monday", UTC, currentExecutorName);
     long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
     long        from     = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
     long        to       = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
@@ -165,8 +167,8 @@ public class CompilerTest extends TestParent {
 
   @Test
   public void compile_shouldRespectOperatorPrecedenceAndParentheses() {
-    ScheduleSrc withoutParentheses = Compiler.compile("13:00 + 14:00 * Tuesday", UTC);
-    ScheduleSrc withParentheses    = Compiler.compile("(13:00 + 14:00) * Tuesday", UTC);
+    ScheduleSrc withoutParentheses = Compiler.compile("13:00 + 14:00 * Tuesday", UTC, currentExecutorName);
+    ScheduleSrc withParentheses    = Compiler.compile("(13:00 + 14:00) * Tuesday", UTC, currentExecutorName);
     long        started            = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
     long        from               = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
     long        to                 = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
@@ -184,7 +186,7 @@ public class CompilerTest extends TestParent {
 
   @Test
   public void compile_shouldParseTimeRangeWithEveryPeriod() {
-    ScheduleSrc schedule = Compiler.compile("10:00 - 12:00 every 30 min", UTC);
+    ScheduleSrc schedule = Compiler.compile("10:00 - 12:00 every 30 min", UTC, currentExecutorName);
     long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
     long        from     = timestamp(UTC, 2026, 5, 25, 10, 30, 0, 0);
     long        to       = timestamp(UTC, 2026, 5, 25, 10, 30, 1, 0);
@@ -200,7 +202,7 @@ public class CompilerTest extends TestParent {
 
   @Test
   public void compile_shouldParseRepeatEveryWithStartOffset() {
-    ScheduleSrc schedule = Compiler.compile("repeat every 10 s starts with 5 s", UTC);
+    ScheduleSrc schedule = Compiler.compile("repeat every 10 s starts with 5 s", UTC, currentExecutorName);
     long        started  = 1_000;
     long        from     = 6_000;
     long        to       = 7_000;
@@ -216,7 +218,7 @@ public class CompilerTest extends TestParent {
 
   @Test
   public void compile_shouldParseRussianAliases() {
-    ScheduleSrc schedule = Compiler.compile("10:00 - 11:00 каждую 15 минут * Пн * Май * 2026 год", UTC);
+    ScheduleSrc schedule = Compiler.compile("10:00 - 11:00 каждую 15 минут * Пн * Май * 2026 год", UTC, currentExecutorName);
     long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
     long        from     = timestamp(UTC, 2026, 5, 25, 10, 15, 0, 0);
     long        to       = timestamp(UTC, 2026, 5, 25, 10, 15, 1, 0);
@@ -232,13 +234,13 @@ public class CompilerTest extends TestParent {
 
   @Test
   public void compile_shouldThrowSchedulerCompileErrForUnknownExpression() {
-    assertThatThrownBy(() -> Compiler.compile("unknown", UTC)).isInstanceOf(SchedulerCompileErr.class)
-                                                              .hasMessageContaining("Expected schedule expression");
+    assertThatThrownBy(() -> Compiler.compile("unknown", UTC, currentExecutorName)).isInstanceOf(SchedulerCompileErr.class)
+                                                                                   .hasMessageContaining("Expected schedule expression");
   }
 
   @Test
   public void compile_shouldReturnNeverRunWhenTrimmedExpressionStartsWithHash() {
-    ScheduleSrc schedule = Compiler.compile("  # 13:00", UTC);
+    ScheduleSrc schedule = Compiler.compile("  # 13:00", UTC, currentExecutorName);
 
     //
     //
@@ -257,7 +259,7 @@ public class CompilerTest extends TestParent {
 
   @Test
   public void compile_shouldTrimExpressionBeforeParsing() {
-    ScheduleSrc schedule = Compiler.compile("  13:00  ", UTC);
+    ScheduleSrc schedule = Compiler.compile("  13:00  ", UTC, currentExecutorName);
     long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
     long        from     = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
     long        to       = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
@@ -284,7 +286,7 @@ public class CompilerTest extends TestParent {
 
   @Test(dataProvider = "parallelScheduleExpressions")
   public void compile_shouldMarkScheduleAsParallelWhenTrimmedExpressionStartsWithParallelWord(String expression) {
-    ScheduleSrc schedule = Compiler.compile(expression, UTC);
+    ScheduleSrc schedule = Compiler.compile(expression, UTC, currentExecutorName);
     long        started  = timestamp(UTC, 2026, 5, 25, 0, 0, 0, 0);
     long        from     = timestamp(UTC, 2026, 5, 25, 13, 0, 0, 0);
     long        to       = timestamp(UTC, 2026, 5, 25, 13, 0, 1, 0);
@@ -301,7 +303,7 @@ public class CompilerTest extends TestParent {
 
   @Test
   public void compile_shouldNotMarkScheduleAsParallelWithoutParallelPrefix() {
-    ScheduleSrc schedule = Compiler.compile("13:00", UTC);
+    ScheduleSrc schedule = Compiler.compile("13:00", UTC, currentExecutorName);
 
     assertThat(schedule.isParallel()).isFalse();
   }

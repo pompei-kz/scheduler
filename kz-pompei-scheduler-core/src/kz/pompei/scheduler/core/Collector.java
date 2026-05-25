@@ -63,7 +63,7 @@ public class Collector {
                                                                                       .map(TimeZone::getTimeZone)
                                                                                       .orElseGet(def::getTimezone);
 
-          @NonNull final ScheduleSrc scheduleSrc = Compiler.compile(schedule.ann.value(), timeZone);
+          @NonNull final ScheduleSrc scheduleSrc = Compiler.compile(schedule.ann.value(), timeZone, null);
           @NonNull final Task        task        = createTask(object, method);
 
           @Override public @NonNull ScheduleSrc src() {

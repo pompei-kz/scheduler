@@ -14,4 +14,8 @@ public class SchedulerUtil {
       return idx < 0 ? name : name.substring(idx + 1);
     }
   }
+
+  public static String trimStr(String str) {
+    return str == null ? null : str.trim();
+  }
 }
