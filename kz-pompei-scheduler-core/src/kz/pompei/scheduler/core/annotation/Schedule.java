@@ -19,6 +19,33 @@ import java.lang.annotation.Target;
  * <p>
  * {@code (13:00 + 14:00) * (Monday + Tuesday)} - means every Monday and Tuesday at 13:00 and 14:00
  *
+ * <h2>Schedule Text Prefixes</h2>
+ * Leading and trailing spaces in the schedule text are ignored.
+ * <p>
+ * If the trimmed schedule text starts with {@code #}, the task never runs.
+ * This can be used to disable a schedule without deleting its text.
+ * <p>
+ * If the trimmed schedule text starts with {@code Exe(executorName)}, then
+ * {@code executorName} is used as the executor name for this task. The {@code Exe}
+ * keyword is case-insensitive, and spaces around the executor name are ignored.
+ * The schedule expression starts after the closing {@code )}.
+ * <p>
+ * For example:
+ * <p>
+ * {@code Exe(background-pool) 13:00}
+ * <p>
+ * If the first word of the remaining schedule text starts with {@code paral}
+ * or {@code парал}, the task may run in parallel with itself. The marker word
+ * is removed before parsing the schedule expression.
+ * <p>
+ * For example:
+ * <p>
+ * {@code parallel 13:00}
+ * <p>
+ * Prefixes can be combined in this order:
+ * <p>
+ * {@code Exe(background-pool) parallel 13:00}
+ *
  * <h2>Temporal Sets</h2>
  * A schedule expression produces a temporal set.
  * <p>
