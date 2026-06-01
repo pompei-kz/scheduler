@@ -6,6 +6,7 @@
 [![Gradle](https://img.shields.io/badge/build-Gradle-green.svg)](#build-and-test)
 [![TestNG](https://img.shields.io/badge/tests-TestNG-orange.svg)](#build-and-test)
 [![Version](https://img.shields.io/badge/version-0.0.1-lightgrey.svg)](versions/version.txt)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `kz-pompei-scheduler` runs Java methods according to schedule expressions.
 Schedules can be written directly in annotations or loaded from hot configuration backed by
@@ -37,6 +38,7 @@ scheduler.startUp();
 - [Executors](#executors)
 - [Build And Test](#build-and-test)
 - [Project Layout](#project-layout)
+- [License](#license)
 - [Roadmap Ideas](#roadmap-ideas)
 
 ## Quick Start
@@ -45,7 +47,7 @@ This example mirrors the task collection pattern used by the scheduler core and 
 
 ### 1. Dependency
 
-Add this to build.gradle / dependencies
+Add this to the `dependencies` block in `build.gradle`:
 
 ```groovy
 implementation "kz.pompei.scheduler:kz-pompei-scheduler-core:0.0.1"
@@ -368,6 +370,10 @@ Notes for contributors:
 - Lombok and JetBrains annotations are used throughout the codebase.
 - Java toolchain is configured for Java 21.
 - `kz-pompei-scheduler-core` depends on `kz-pompei-hotconfig-core` for configuration tunnels and models.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
 
 ## Roadmap Ideas
 

@@ -8,15 +8,24 @@ publishing {
   publications {
     mavenJava(MavenPublication) {
       from components.java
+      pom {
+        licenses {
+          license {
+            name = 'MIT License'
+            url = 'https://opensource.org/license/mit'
+            distribution = 'repo'
+          }
+        }
+      }
     }
   }
 }
 
 kzPompeiPublication {
   pom {
-    name = 'kz-pompei-fui'
+    name = 'kz-pompei-scheduler-core'
     description = 'Scheduler with hot config'
-    url = 'https://pompei.kz/programs/kz-pompei-scheduler'
+    url = 'https://pompei.kz/program/kz-pompei-scheduler'
   }
 
   developers {
