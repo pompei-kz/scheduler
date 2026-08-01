@@ -50,7 +50,7 @@ This example mirrors the task collection pattern used by the scheduler core and 
 Add this to the `dependencies` block in `build.gradle`:
 
 ```groovy
-implementation "kz.pompei.scheduler:kz-pompei-scheduler-core:0.0.1"
+implementation "kz.pompei.scheduler:kz-pompei-scheduler-core:0.0.3"
 implementation "kz.pompei.hotconfig:kz-pompei-hotconfig-core:0.0.7"
 ```
 
