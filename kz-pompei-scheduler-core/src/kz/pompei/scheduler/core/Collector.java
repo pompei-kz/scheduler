@@ -108,7 +108,7 @@ public class Collector {
     findAnnotation(object.getClass(), ConfDoc.class).ifPresent(
       classConfDoc -> Collections.addAll(confDefault.confComments, classConfDoc.ann.value().split("\n")));
 
-    @NonNull String folder    = findAnnotation(object.getClass(), ConfFolder.class).map(s -> s + "/").orElse("");
+    @NonNull String folder    = findAnnotation(object.getClass(), ConfFolder.class).map(s -> s.ann.value() + "/").orElse("");
     @NonNull String localPath = folder + SchedulerUtil.extractClassName(object.getClass()) + def.configExtension;
 
     AtomicLong lastModificationMarker = new AtomicLong(0L);

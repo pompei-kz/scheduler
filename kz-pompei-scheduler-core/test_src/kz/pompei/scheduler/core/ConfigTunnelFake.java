@@ -2,6 +2,8 @@ package kz.pompei.scheduler.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import kz.pompei.hotconfig.core.ConfigTunnel;
@@ -45,5 +47,14 @@ public class ConfigTunnelFake implements ConfigTunnel {
   @Override public @Nullable Long modificationMarker(@NonNull String localPath) {
     Dot dot = localPath_to_dot.get(localPath);
     return dot == null ? null : dot.modificationMarker;
+  }
+
+  /**
+   * All local paths written to this tunnel.
+   *
+   * @return written local paths
+   */
+  public @NonNull Set<String> writtenLocalPaths() {
+    return new TreeSet<>(localPath_to_dot.keySet());
   }
 }
